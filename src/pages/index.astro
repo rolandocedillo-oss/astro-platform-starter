@@ -3,19 +3,38 @@ import Layout from '../layouts/Layout.astro';
 import Markdown from '../components/Markdown.astro';
 
 const explainer = `
-Welcome to Ideas Kids Can this website is used to showcase Games, Comics, and content created by Kids for Kids.
-
-Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
-Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
-`;
+Welcome to Ideas Kids Can this website is used to showcase Games, Comics, and content created by Kids for Kids.`;
+//Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
+//Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
 ---
 
 <Layout title="Welcome to Ideas Kids Can.">
     <h1 class="mb-10">Ideas Kids Can</h1>
     <Markdown content={explainer} class="mb-10 text-lg" />
     <p>
+    <!-- THIS IS HOW TO COMMENT!!!
         <a href="https://docs.netlify.com/frameworks/astro/" class="btn btn-lg sm:min-w-64">Read the Docs</a>
+    -->
     </p>
+
+    <p>Check out these awesome games created by kids!</p>
+
+    <div class="game-card">
+      <h2>Neon Defender</h2>
+      <iframe 
+        src="games/neondefender/index.html" 
+        title="Neon Defender"
+        style="width: 100%; height: 600px; border: 2px solid red;"
+      ></iframe>
+    </div>
+       <div class="game-card">
+      <h2>Battle Tanks</h2>
+      <iframe 
+        src="games/battletanks/index.html" 
+        title="Battle Tanks"
+        style="width: 100%; height: 600px; border: 2px solid red;"
+      ></iframe>
+    </div>
 </Layout>
 
 

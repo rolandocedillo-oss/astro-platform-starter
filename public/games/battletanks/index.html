@@ -1,0 +1,1247 @@
+<!-- 
+    BATTLE TANKS 3D
+    ---------------------------------------------------
+    Version: 2.1.0 (Multiplayer Stable)
+    Last Updated: 2026-01-24
+    
+    Changelog:
+    - v2.1: Fixed Map Sync, Added Touch Rotation, Fixed Powerup Sync
+    - v2.0: Added Online & Local Multiplayer
+    - v1.5: Added Powerups (Oil, Missile, Electric)
+    - v1.0: Base Singleplayer Game
+    ---------------------------------------------------
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Tanks 3D: Multiplayer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        #main-menu, #setup-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            color: white;
+        }
+        .menu-box {
+            background: #222;
+            padding: 40px;
+            border-radius: 10px;
+            border: 2px solid #4ade80;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+            max-width: 450px;
+            width: 90%;
+        }
+        .menu-btn {
+            background: #4ade80;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            color: #003300;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px;
+            width: 220px;
+            transition: transform 0.1s;
+        }
+        .menu-btn:hover { background: #6ee7a0; }
+        .menu-btn:active { transform: scale(0.95); }
+        .secondary-btn { background: #4488ff; color: #001133; }
+        .secondary-btn:hover { background: #6699ff; }
+        .local-btn { background: #ffaa00; color: #331100; }
+        .local-btn:hover { background: #ffcc00; }
+        .copy-btn { background: #888; color: #fff; font-size: 14px; padding: 8px 16px; width: 120px; margin: 5px; }
+        .copy-btn:hover { background: #aaa; }
+        
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: #333;
+            color: white;
+            margin-bottom: 10px;
+            width: 200px;
+            text-align: center;
+        }
+
+        #game-code-display {
+            font-size: 24px;
+            font-family: monospace;
+            color: #ffff00;
+            letter-spacing: 2px;
+            margin: 10px 0;
+            user-select: all;
+        }
+
+        #header {
+            text-align: center;
+            padding: 20px;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 2px; }
+        p { margin: 5px 0; font-size: 14px; opacity: 0.8; }
+        #score-board {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4ade80;
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+            display: none;
+            pointer-events: auto;
+            border: 2px solid #444;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            z-index: 150;
+        }
+
+        #health-bar-container {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 15px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #555;
+            display: flex;
+        }
+        .health-fill {
+            height: 100%;
+            transition: width 0.2s;
+        }
+        #health-fill-p1 { background: #4ade80; width: 100%; }
+        #health-fill-p2 { background: #4488ff; width: 0%; display: none; }
+        
+        #top-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            pointer-events: auto;
+            display: flex;
+            gap: 10px;
+        }
+        .game-btn {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #666;
+            color: white;
+            padding: 8px 15px;
+            cursor: pointer;
+            z-index: 100;
+            border-radius: 4px;
+            font-family: inherit;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .game-btn:hover { background: rgba(0, 0, 0, 0.8); }
+        #ally-btn { color: #4488ff; border-color: #4488ff; }
+        #remove-ally-btn { color: #ff4444; border-color: #ff4444; }
+
+        /* Mobile Bomb Button */
+        #mobile-bomb-btn {
+            position: absolute;
+            bottom: 120px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background: rgba(200, 0, 0, 0.6);
+            border: 2px solid #ff5555;
+            border-radius: 50%;
+            color: white;
+            font-size: 28px;
+            z-index: 100;
+            pointer-events: auto;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Show on small screens */
+        @media (max-width: 1024px) {
+            #mobile-bomb-btn { display: flex; }
+        }
+
+        #radar-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            pointer-events: auto;
+        }
+        #radar {
+            background: rgba(0, 20, 0, 0.9);
+            border: 2px solid #4ade80;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            opacity: 0.9;
+            width: 150px;
+            height: 150px;
+        }
+        #status-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+        }
+        #bomb-container {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #555;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 2px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .bomb-stat {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        #weapon-status {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+            font-size: 18px;
+            text-align: center;
+        }
+        .setup-list {
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        /* Version Tag */
+        #version-tag {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="main-menu">
+        <div class="menu-box" id="menu-start">
+            <h1>BATTLE TANKS</h1>
+            <p>Select Game Mode</p>
+            <button class="menu-btn" onclick="startSingleplayer()">Singleplayer</button>
+            <br>
+            <button class="menu-btn local-btn" onclick="startLocalMultiplayer()">Local PvP (2P)</button>
+            <br>
+            <button class="menu-btn secondary-btn" onclick="showMultiplayerMenu()">Online PvP</button>
+        </div>
+        <div id="version-tag">v2.1.0</div>
+
+        <div class="menu-box" id="menu-multi" style="display: none;">
+            <h2>Online Lobby</h2>
+            <p>Connect to Server</p>
+            <button class="menu-btn" onclick="createGame()">Create Game</button>
+            <hr style="border-color: #444; width: 80%; margin: 15px auto;">
+            <input type="text" id="join-code" placeholder="Enter Game ID">
+            <br>
+            <button class="menu-btn secondary-btn" onclick="joinGame()">Join Game</button>
+            <br>
+            <button class="game-btn" onclick="showStartMenu()" style="margin-top: 15px;">Back</button>
+        </div>
+
+        <div class="menu-box" id="menu-lobby" style="display: none;">
+            <h2>Lobby Created</h2>
+            <p>Share this code:</p>
+            <div id="game-code-display">...</div>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                <button class="menu-btn copy-btn" id="btn-copy-code" onclick="copyGameCode()">Copy Code</button>
+                <button class="menu-btn copy-btn" id="btn-copy-link" onclick="copyInviteLink()">Copy Link</button>
+            </div>
+            <p style="font-size: 12px; color: #aaa;">(Use Code if playing on different networks)</p>
+            <p>Waiting for players...</p>
+            <button class="menu-btn" onclick="startMultiplayerGame()">Enter Arena</button>
+        </div>
+
+        <!-- Setup Help Modal -->
+        <div class="menu-box" id="menu-setup-help" style="display: none;">
+            <h2 style="color: #ffaa00">⚠️ Setup Required</h2>
+            <p>Online Play requires a database connection.</p>
+            <div class="setup-list">
+                1. Open this file in a text editor.<br>
+                2. Find <b>"PASTE YOUR FIREBASE CONFIG HERE"</b>.<br>
+                3. Paste your config from firebase.google.com.<br>
+                4. Enable <b>Anonymous Auth</b> & <b>Firestore</b> in Firebase console.
+            </div>
+            <button class="menu-btn" onclick="showStartMenu()">Back to Menu</button>
+        </div>
+    </div>
+
+    <div id="ui-layer" style="display:none;">
+        <div id="radar-container">
+            <canvas id="radar" width="150" height="150"></canvas>
+            <div id="status-panel">
+                <div style="color: #4488ff">Allies: <span id="ally-count">0</span></div>
+                <div style="color: #ef4444">Hostiles: <span id="enemy-count">0</span></div>
+            </div>
+            <div id="bomb-container">
+                <div id="p1-bomb-row" class="bomb-stat" style="color: #4ade80;">P1 Bombs (V): <span id="bomb-count-p1" style="color: #ffff00">0</span></div>
+                <div id="p2-bomb-row" class="bomb-stat" style="color: #4488ff; display: none;">P2 Bombs (M): <span id="bomb-count-p2" style="color: #ffff00">0</span></div>
+            </div>
+        </div>
+
+        <div id="top-buttons">
+            <button class="game-btn" id="ally-btn" onclick="spawnAlly()">+ Ally</button>
+            <button class="game-btn" id="remove-ally-btn" onclick="removeAlly()">- Ally</button>
+            <button class="game-btn" id="control-btn" onclick="toggleControlScheme()">Mode: TANK</button>
+            <button class="game-btn" id="pause-btn" onclick="togglePause()">Pause</button>
+            <button class="game-btn" onclick="exitToMenu()" style="background-color: #ef4444; border-color: #ff2222;">Exit</button>
+        </div>
+        <div id="header">
+            <h1>BATTLE TANKS</h1>
+            <p id="controls-hint">Arrows to Drive & Turn | Space to Shoot</p>
+            <div id="score-board">0</div>
+        </div>
+        <div id="weapon-status"></div>
+        <div id="health-bar-container">
+            <div id="health-fill-p1" class="health-fill"></div>
+            <div id="health-fill-p2" class="health-fill"></div>
+        </div>
+        
+        <!-- Mobile Bomb Button -->
+        <button id="mobile-bomb-btn">💣</button>
+    </div>
+
+    <div id="game-over">
+        <h2 style="margin-top:0; color: #ef4444;">GAME OVER</h2>
+        <p id="game-over-msg">Final Score: 0</p>
+        <button class="menu-btn" onclick="restartGame()">RESTART</button>
+        <br>
+        <button class="game-btn" onclick="exitToMenu()" style="margin-top:10px">MAIN MENU</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================
+        // --- PASTE YOUR FIREBASE CONFIG HERE ---
+        // 1. Go to console.firebase.google.com
+        // 2. Create a project -> Add Web App -> Copy config
+        // 3. Replace the empty object below with your config
+        // =========================================================
+        const USER_FIREBASE_CONFIG = {
+        apiKey: "AIzaSyCG97u_JxFUlFmG0nbEoSo2yiHIaKuGYD0",
+        authDomain: "battletanks-5d15a.firebaseapp.com",
+        projectId: "battletanks-5d15a",
+        storageBucket: "battletanks-5d15a.firebasestorage.app",
+        messagingSenderId: "914386930995",
+        appId: "1:914386930995:web:7cb87a4cb12dd81df2c246",
+        measurementId: "G-P502GG0TYG"
+        };
+        // =========================================================
+
+        const envConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const isPreview = window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('scf');
+        let firebaseConfig = (Object.keys(USER_FIREBASE_CONFIG).length > 0 && !isPreview) ? USER_FIREBASE_CONFIG : envConfig;
+        if (Object.keys(firebaseConfig).length === 0 && Object.keys(USER_FIREBASE_CONFIG).length > 0) {
+            firebaseConfig = USER_FIREBASE_CONFIG;
+        }
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let app, auth, db, user, gameId;
+        let gameMode = 'single'; 
+        let remotePlayers = {}; 
+        let networkUpdateInterval;
+        let unsubPlayers = null;
+        let unsubActions = null;
+        let unsubPowerups = null;
+
+        const SETTINGS = {
+            playerSpeed: 0.25, // Increased speed
+            bulletSpeed: 0.8, // Increased bullet speed
+            enemySpeed: 0.06,
+            allySpeed: 0.12,
+            fireRate: 400,
+            spawnRate: 3500,
+            mapSize: 60,
+            boundarySize: 30,
+            targetFPS: 60,
+            powerupSpawnRate: 8000,
+            playerMaxHealth: 300
+        };
+
+        let scene, camera, renderer;
+        let ground; 
+        let localPlayers = [];
+        let bullets = [];
+        let enemies = [];
+        let allies = [];
+        let particles = [];
+        let obstacleColliders = []; 
+        let powerups = [];
+        let activeBombs = [];
+        let puddles = [];
+        let score = 0;
+        let isGameOver = false;
+        let isPaused = false; 
+        let lastShotTime = 0;
+        let lastSpawnTime = 0;
+        let lastPowerupTime = 0;
+        let controlScheme = 'tank';
+        
+        let radarCtx;
+        let lastFrameTime = 0;
+        const frameInterval = 1000 / SETTINGS.targetFPS;
+        
+        const keys = { w: false, a: false, s: false, d: false, space: false, v: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false, enter: false, m: false, b: false };
+        const mouse = new THREE.Vector2();
+        let inputMode = 'keyboard';
+        const raycaster = new THREE.Raycaster();
+        const targetPoint = new THREE.Vector3();
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+        async function initFirebase() {
+            if (!firebaseConfig.apiKey) {
+                console.warn("No Firebase Config found.");
+                return;
+            }
+            
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+                else await signInAnonymously(auth);
+                user = auth.currentUser;
+                console.log("Signed in as", user.uid);
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const inviteCode = urlParams.get('game');
+                if (inviteCode) {
+                    document.getElementById('join-code').value = inviteCode;
+                    showMultiplayerMenu();
+                }
+            } catch (error) { 
+                console.error("Auth Failed", error); 
+                alert("Firebase Error: " + error.message);
+            }
+        }
+        
+        // Auto-init on load
+        initFirebase();
+
+        window.startSingleplayer = () => { gameMode = 'single'; setupGameUI(); initGame(); };
+        window.startLocalMultiplayer = () => { gameMode = 'local'; setupGameUI(); initGame(); };
+        
+        window.showMultiplayerMenu = async () => { 
+            if (!user && !firebaseConfig.apiKey) {
+                document.getElementById('menu-start').style.display = 'none';
+                document.getElementById('menu-setup-help').style.display = 'block';
+                return;
+            }
+            if (!user) await initFirebase(); 
+            if (user) {
+                document.getElementById('menu-start').style.display = 'none'; 
+                document.getElementById('menu-multi').style.display = 'block'; 
+            }
+        };
+        
+        window.showStartMenu = () => { 
+            document.getElementById('menu-multi').style.display = 'none'; 
+            document.getElementById('menu-lobby').style.display = 'none';
+            document.getElementById('menu-setup-help').style.display = 'none';
+            document.getElementById('menu-start').style.display = 'block'; 
+        };
+        
+        window.exitToMenu = () => {
+            isPaused = true;
+            document.getElementById('ui-layer').style.display = 'none';
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'flex';
+            document.getElementById('menu-start').style.display = 'block';
+            document.getElementById('menu-multi').style.display = 'none';
+            document.getElementById('menu-lobby').style.display = 'none';
+
+            if (networkUpdateInterval) clearInterval(networkUpdateInterval);
+            if (unsubPlayers) unsubPlayers();
+            if (unsubActions) unsubActions();
+            if (unsubPowerups) unsubPowerups();
+            unsubPlayers = null; unsubActions = null; unsubPowerups = null;
+
+            localPlayers = [];
+            bullets = []; enemies = []; allies = []; powerups = []; activeBombs = []; puddles = [];
+            remotePlayers = {};
+            gameId = null;
+        };
+
+        window.createGame = async () => {
+            if (!user) return alert("Authentication missing. Check config.");
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase(); gameId = code;
+            
+            // Host generates map data
+            const mapData = [];
+            for(let i=0; i<15; i++) {
+                let x, z;
+                do {
+                    x = (Math.random() - 0.5) * (SETTINGS.boundarySize * 1.5);
+                    z = (Math.random() - 0.5) * (SETTINGS.boundarySize * 1.5);
+                } while (Math.abs(x) < 5 && Math.abs(z) < 5);
+                mapData.push({x: x, z: z});
+            }
+
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bt_games', gameId), { 
+                host: user.uid, 
+                status: 'waiting', 
+                createdAt: Date.now(),
+                mapData: mapData 
+            });
+            document.getElementById('menu-multi').style.display = 'none'; document.getElementById('menu-lobby').style.display = 'block'; document.getElementById('game-code-display').innerText = code;
+        };
+        
+        window.copyGameCode = () => {
+            const code = document.getElementById('game-code-display').innerText;
+            const input = document.createElement('textarea'); input.value = code; document.body.appendChild(input); input.select(); document.execCommand('copy'); document.body.removeChild(input);
+            const btn = document.getElementById('btn-copy-code'); const originalText = btn.innerText; btn.innerText = "COPIED!"; setTimeout(() => btn.innerText = originalText, 2000);
+        }
+
+        window.copyInviteLink = () => {
+            const url = window.location.href.split('?')[0] + '?game=' + gameId;
+            const input = document.createElement('textarea'); input.value = url; document.body.appendChild(input); input.select(); document.execCommand('copy'); document.body.removeChild(input);
+            const btn = document.getElementById('btn-copy-link'); const originalText = btn.innerText; btn.innerText = "COPIED!"; setTimeout(() => btn.innerText = originalText, 2000);
+        };
+
+        window.joinGame = async () => {
+            if (!user) return alert("Authentication missing. Check config.");
+            const code = document.getElementById('join-code').value.toUpperCase().trim(); if (!code) return alert("Enter a code!");
+            gameId = code; gameMode = 'network'; setupGameUI(); initGame();
+        };
+        window.startMultiplayerGame = () => { gameMode = 'network'; setupGameUI(); initGame(); };
+
+        function setupGameUI() {
+            document.getElementById('main-menu').style.display = 'none'; document.getElementById('ui-layer').style.display = 'block';
+            if (gameMode === 'local') {
+                document.getElementById('ally-btn').style.display = 'none'; document.getElementById('remove-ally-btn').style.display = 'none';
+                document.getElementById('controls-hint').innerHTML = "P1: WASD+Space | P2: Arrows+Enter";
+                document.getElementById('health-fill-p1').style.width = '50%'; document.getElementById('health-fill-p2').style.width = '50%';
+                document.getElementById('health-fill-p2').style.display = 'block'; document.getElementById('health-bar-container').style.justifyContent = 'space-between';
+                document.getElementById('p2-bomb-row').style.display = 'flex';
+            } else if (gameMode === 'network') {
+                document.getElementById('ally-btn').style.display = 'none'; document.getElementById('remove-ally-btn').style.display = 'none';
+                document.getElementById('health-fill-p2').style.display = 'none';
+                document.getElementById('p2-bomb-row').style.display = 'none';
+            } else { 
+                document.getElementById('ally-btn').style.display = 'inline-block';
+                document.getElementById('remove-ally-btn').style.display = 'inline-block';
+                document.getElementById('controls-hint').innerHTML = "Arrows to Drive & Turn | Space to Shoot";
+                document.getElementById('health-fill-p2').style.display = 'none'; 
+                document.getElementById('p2-bomb-row').style.display = 'none';
+            }
+        }
+
+        async function setupMultiplayerListeners() {
+            if (!gameId) return;
+            
+            // Sync Loop (80ms for faster updates)
+            networkUpdateInterval = setInterval(async () => {
+                if (isGameOver || !localPlayers[0]) return;
+                const myDocId = `${gameId}_${user.uid}`;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bt_players', myDocId), {
+                    gameId: gameId, userId: user.uid, x: localPlayers[0].position.x, z: localPlayers[0].position.z, rot: localPlayers[0].rotation.y,
+                    hp: localPlayers[0].userData.hp, lastUpdate: Date.now()
+                });
+                
+                // HOST: Spawn Powerups randomly
+                const gameDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bt_games', gameId));
+                if (gameDoc.exists() && gameDoc.data().host === user.uid) {
+                     if (Date.now() - lastPowerupTime > SETTINGS.powerupSpawnRate) {
+                        const types = ['electric', 'missile', 'bomb', 'oil'];
+                        const type = types[Math.floor(Math.random() * types.length)];
+                        let pos = {x:0, z:0}, valid = false, tries = 0;
+                        while (!valid && tries < 20) {
+                             pos.x = (Math.random() - 0.5) * (SETTINGS.boundarySize * 1.8);
+                             pos.z = (Math.random() - 0.5) * (SETTINGS.boundarySize * 1.8);
+                             const dummyBox = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(pos.x, 1, pos.z), new THREE.Vector3(2, 2, 2));
+                             valid = true;
+                             for (const box of obstacleColliders) { if (dummyBox.intersectsBox(box)) { valid = false; break; } }
+                             tries++;
+                        }
+                        if (valid) {
+                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bt_powerups'), {
+                                gameId: gameId, type: type, x: pos.x, z: pos.z, createdAt: Date.now()
+                            });
+                        }
+                        lastPowerupTime = Date.now();
+                     }
+                }
+
+            }, 80); // Reduced to 80ms
+            
+            // Listen Players
+            unsubPlayers = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'bt_players'), (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data(); if (data.gameId !== gameId || data.userId === user.uid) return;
+                    const pid = data.userId;
+                    if (change.type === "added") { 
+                        const enemyTank = createTank(0xff00ff); 
+                        enemyTank.position.set(data.x, 0, data.z); 
+                        // Init interpolation targets
+                        enemyTank.userData.targetX = data.x;
+                        enemyTank.userData.targetZ = data.z;
+                        enemyTank.userData.targetRot = data.rot;
+                        scene.add(enemyTank); 
+                        remotePlayers[pid] = enemyTank; 
+                        enemies.push(enemyTank); 
+                    }
+                    
+                    if (change.type === "modified") { 
+                        if (remotePlayers[pid]) {
+                            // Update Targets for Interpolation
+                            remotePlayers[pid].userData.targetX = data.x;
+                            remotePlayers[pid].userData.targetZ = data.z;
+                            remotePlayers[pid].userData.targetRot = data.rot;
+                            
+                            if (data.hp > 0 && !remotePlayers[pid].parent) {
+                                scene.add(remotePlayers[pid]);
+                                if(!enemies.includes(remotePlayers[pid])) enemies.push(remotePlayers[pid]);
+                                // Reset pos to avoid interp glitches on respawn
+                                remotePlayers[pid].position.set(data.x, 0, data.z);
+                                remotePlayers[pid].userData.targetX = data.x;
+                                remotePlayers[pid].userData.targetZ = data.z;
+                            }
+                            if (data.hp <= 0 && remotePlayers[pid].parent) {
+                                createExplosion(remotePlayers[pid].position);
+                                scene.remove(remotePlayers[pid]);
+                                const idx = enemies.indexOf(remotePlayers[pid]); if (idx > -1) enemies.splice(idx, 1);
+                            }
+                        }
+                    }
+                    if (change.type === "removed" && remotePlayers[pid]) { createExplosion(remotePlayers[pid].position); scene.remove(remotePlayers[pid]); const idx = enemies.indexOf(remotePlayers[pid]); if (idx > -1) enemies.splice(idx, 1); delete remotePlayers[pid]; }
+                });
+            });
+            
+            // Listen Actions
+            unsubActions = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'bt_actions'), (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") { const data = change.doc.data(); if (data.gameId !== gameId || data.from === user.uid) return; if (Date.now() - data.ts > 2000) return;
+                        if (data.type === 'shoot' && remotePlayers[data.from]) { shoot(remotePlayers[data.from], data.weaponType || 'normal'); }
+                    }
+                });
+            });
+
+            // Listen Powerups
+            unsubPowerups = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'bt_powerups'), (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data(); if (data.gameId !== gameId) return;
+                    if (change.type === "added") {
+                        let geo, color;
+                        const type = data.type;
+                        if (type === 'electric') { geo = new THREE.BoxGeometry(0.8, 0.8, 0.8); color = 0x00ffff; } else if (type === 'missile') { geo = new THREE.ConeGeometry(0.5, 1, 8); color = 0x9933ff; } else if (type === 'oil') { geo = new THREE.DodecahedronGeometry(0.6); color = 0x222222; } else { geo = new THREE.SphereGeometry(0.6, 16, 16); color = 0x111111; }
+                        const mat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.3 }); const mesh = new THREE.Mesh(geo, mat); 
+                        mesh.position.set(data.x, 1, data.z); mesh.castShadow = true; 
+                        mesh.userData = { type: type, floatOffset: Math.random() * Math.PI * 2, dbId: change.doc.id }; 
+                        scene.add(mesh); powerups.push(mesh);
+                    }
+                    if (change.type === "removed") {
+                        const pIdx = powerups.findIndex(p => p.userData.dbId === change.doc.id);
+                        if (pIdx > -1) { scene.remove(powerups[pIdx]); powerups.splice(pIdx, 1); }
+                    }
+                });
+            });
+        }
+
+        async function broadcastShoot(type) { if (gameMode !== 'network') return; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bt_actions'), { gameId: gameId, type: 'shoot', from: user.uid, weaponType: type, ts: Date.now() }); }
+
+        async function initGame() { 
+            await initThreeJS(); 
+            if (gameMode === 'network') setupMultiplayerListeners(); 
+            animate(); 
+        }
+
+        function onGameWindowResize2() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+
+        async function initThreeJS() {
+            if (!renderer) {
+                scene = new THREE.Scene(); 
+                const aspect = window.innerWidth / window.innerHeight; camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100); 
+                renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(renderer.domElement);
+                window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }); 
+                window.addEventListener('keydown', (e) => updateKey(e, true)); window.addEventListener('keyup', (e) => updateKey(e, false)); window.addEventListener('mousemove', onMouseMove); window.addEventListener('mousedown', tryShoot); window.addEventListener('touchstart', onTouch); window.addEventListener('touchmove', onTouch);
+
+                // Add mobile bomb button listener
+                const bombBtn = document.getElementById('mobile-bomb-btn');
+                const dropBombHandler = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (localPlayers[0] && localPlayers[0].userData.bombs > 0) {
+                        dropBomb(localPlayers[0]);
+                        localPlayers[0].userData.bombs--;
+                    }
+                };
+                bombBtn.addEventListener('touchstart', dropBombHandler);
+                bombBtn.addEventListener('click', dropBombHandler); // For desktop testing/mouse clicks
+            } else {
+                scene.clear();
+            }
+            
+            scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 20, 70);
+            camera.position.set(0, 25, 20); camera.lookAt(0, 0, 0);
+            
+            const radarCanvas = document.getElementById('radar'); radarCtx = radarCanvas.getContext('2d');
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9); dirLight.position.set(20, 50, 10); dirLight.castShadow = true; dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048; dirLight.shadow.camera.left = -30; dirLight.shadow.camera.right = 30; dirLight.shadow.camera.top = 30; dirLight.shadow.camera.bottom = -30; scene.add(dirLight);
+            
+            // NETWORK MAP SYNC
+            let mapData = null;
+            if (gameMode === 'network' && gameId) {
+                const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bt_games', gameId));
+                if (docSnap.exists()) {
+                    mapData = docSnap.data().mapData;
+                }
+            }
+            
+            createEnvironment(mapData);
+            
+            localPlayers = [];
+            isPaused = false; 
+            isGameOver = false;
+            
+            const p1 = createTank(0x4ade80); 
+            p1.userData = { id: 'p1', weapon: 'normal', weaponTimer: 0, slipTimer: 0, hp: SETTINGS.playerMaxHealth, bombs: 0, lastShot: 0 }; 
+            scene.add(p1); localPlayers.push(p1);
+            
+            if (gameMode === 'local') { 
+                const p2 = createTank(0x4488ff); 
+                p2.userData = { id: 'p2', weapon: 'normal', weaponTimer: 0, slipTimer: 0, hp: SETTINGS.playerMaxHealth, bombs: 0, lastShot: 0 }; 
+                p2.position.set(5, 0, 5); scene.add(p2); localPlayers.push(p2); 
+            }
+            else if (gameMode === 'network') { p1.position.x = (Math.random() - 0.5) * 40; p1.position.z = (Math.random() - 0.5) * 40; }
+        }
+
+        function createEnvironment(mapData) {
+            obstacleColliders = [];
+            
+            const geometry = new THREE.PlaneGeometry(SETTINGS.mapSize * 2, SETTINGS.mapSize * 2); const material = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 1.0, metalness: 0.0 });
+            ground = new THREE.Mesh(geometry, material); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+            const grid = new THREE.GridHelper(SETTINGS.mapSize * 2, 40, 0xbf9b7a, 0xbf9b7a); scene.add(grid);
+            const wallHeight = 2.5; const wallThickness = 1.5; const wallGeoH = new THREE.BoxGeometry(SETTINGS.boundarySize * 2 + wallThickness * 2, wallHeight, wallThickness); const wallGeoV = new THREE.BoxGeometry(wallThickness, wallHeight, SETTINGS.boundarySize * 2); const wallMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 }); const borderMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+            const createWall = (x, z, isHorizontal) => { const wall = new THREE.Mesh(isHorizontal ? wallGeoH : wallGeoV, wallMat); wall.position.set(x, wallHeight/2, z); wall.castShadow = true; wall.receiveShadow = true; const stripe = new THREE.Mesh(new THREE.BoxGeometry(isHorizontal ? SETTINGS.boundarySize * 2 : wallThickness, 0.1, isHorizontal ? wallThickness : SETTINGS.boundarySize * 2), borderMat); stripe.position.y = wallHeight/2 + 0.05; wall.add(stripe); scene.add(wall); obstacleColliders.push(new THREE.Box3().setFromObject(wall)); };
+            createWall(0, -SETTINGS.boundarySize - wallThickness/2, true); createWall(0, SETTINGS.boundarySize + wallThickness/2, true); createWall(-SETTINGS.boundarySize - wallThickness/2, 0, false); createWall(SETTINGS.boundarySize + wallThickness/2, 0, false);
+            
+            // Map Generation logic (Sync or Random)
+            const boxGeo = new THREE.BoxGeometry(2, 2, 2); const boxMat = new THREE.MeshStandardMaterial({ color: 0x654321 });
+            
+            if (mapData && mapData.length > 0) {
+                // Use synced map
+                mapData.forEach(pos => {
+                    const box = new THREE.Mesh(boxGeo, boxMat);
+                    box.position.set(pos.x, 1, pos.z);
+                    box.castShadow = true; box.receiveShadow = true; scene.add(box); obstacleColliders.push(new THREE.Box3().setFromObject(box));
+                });
+            } else {
+                // Use random map (Local/Single)
+                for(let i=0; i<15; i++) { 
+                    const box = new THREE.Mesh(boxGeo, boxMat); let x, z; 
+                    do { x = (Math.random() - 0.5) * (SETTINGS.boundarySize * 1.5); z = (Math.random() - 0.5) * (SETTINGS.boundarySize * 1.5); } while (Math.abs(x) < 5 && Math.abs(z) < 5); 
+                    box.position.set(x, 1, z); box.castShadow = true; box.receiveShadow = true; scene.add(box); obstacleColliders.push(new THREE.Box3().setFromObject(box)); 
+                }
+            }
+        }
+
+        function createTank(color) {
+            const tankGroup = new THREE.Group();
+            const trackGeo = new THREE.BoxGeometry(0.5, 0.5, 2.2); const trackMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const leftTrack = new THREE.Mesh(trackGeo, trackMat); leftTrack.position.set(-0.8, 0.25, 0); leftTrack.castShadow = true;
+            const rightTrack = new THREE.Mesh(trackGeo, trackMat); rightTrack.position.set(0.8, 0.25, 0); rightTrack.castShadow = true; tankGroup.add(leftTrack, rightTrack);
+            const hullGeo = new THREE.BoxGeometry(1.6, 0.7, 2); const hullMat = new THREE.MeshStandardMaterial({ color: color }); const hull = new THREE.Mesh(hullGeo, hullMat); hull.position.y = 0.6; hull.castShadow = true; tankGroup.add(hull);
+            const turretGroup = new THREE.Group(); turretGroup.position.y = 0.95; tankGroup.add(turretGroup);
+            const headGeo = new THREE.BoxGeometry(1, 0.6, 1.2); const head = new THREE.Mesh(headGeo, hullMat); head.position.y = 0.3; head.castShadow = true; turretGroup.add(head);
+            const barrelGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8); const barrelMat = new THREE.MeshStandardMaterial({ color: 0x222222 }); const barrel = new THREE.Mesh(barrelGeo, barrelMat); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.3, 0.8); turretGroup.add(barrel);
+            tankGroup.userData = { weapon: 'normal', weaponTimer: 0, lastShot: 0, slipTimer: 0 };
+            return tankGroup;
+        }
+
+        // spawnPowerup is now strictly for Single/Local. Network uses host logic.
+        function spawnPowerup() {
+            if (isGameOver || gameMode === 'network') return; 
+            const types = ['electric', 'missile', 'bomb', 'oil']; const type = types[Math.floor(Math.random() * types.length)];
+            let pos = new THREE.Vector3(), valid = false, tries = 0;
+            while (!valid && tries < 20) { pos.x = (Math.random() - 0.5) * (SETTINGS.boundarySize * 1.8); pos.z = (Math.random() - 0.5) * (SETTINGS.boundarySize * 1.8); pos.y = 1; const dummyBox = new THREE.Box3().setFromCenterAndSize(pos, new THREE.Vector3(2, 2, 2)); valid = true; for (const box of obstacleColliders) { if (dummyBox.intersectsBox(box)) { valid = false; break; } } tries++; }
+            if (!valid) return;
+            let geo, color;
+            if (type === 'electric') { geo = new THREE.BoxGeometry(0.8, 0.8, 0.8); color = 0x00ffff; } else if (type === 'missile') { geo = new THREE.ConeGeometry(0.5, 1, 8); color = 0x9933ff; } else if (type === 'oil') { geo = new THREE.DodecahedronGeometry(0.6); color = 0x222222; } else { geo = new THREE.SphereGeometry(0.6, 16, 16); color = 0x111111; }
+            const mat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.3 }); const mesh = new THREE.Mesh(geo, mat); mesh.position.copy(pos); mesh.castShadow = true; mesh.userData = { type: type, floatOffset: Math.random() * Math.PI * 2 }; scene.add(mesh); powerups.push(mesh);
+        }
+
+        function createPuddle(pos) {
+            const geo = new THREE.CircleGeometry(3.5, 32); const mat = new THREE.MeshBasicMaterial({ color: 0x111111, transparent: true, opacity: 0.8, depthWrite: false });
+            const puddle = new THREE.Mesh(geo, mat); puddle.rotation.x = -Math.PI / 2; puddle.position.copy(pos); puddle.position.y = 0.05; puddle.userData = { life: 10.0 }; scene.add(puddle); puddles.push(puddle);
+        }
+
+        function dropBomb(source) {
+            const bombGeo = new THREE.SphereGeometry(0.5, 16, 16); const bombMat = new THREE.MeshStandardMaterial({ color: 0x000000 }); const bomb = new THREE.Mesh(bombGeo, bombMat);
+            const dir = new THREE.Vector3(); source.getWorldDirection(dir); bomb.position.copy(source.position).add(dir.multiplyScalar(-1.5)); bomb.position.y = 0.5; bomb.userData = { timer: 2.0, owner: source }; scene.add(bomb); activeBombs.push(bomb);
+        }
+
+        function explode(pos, radius, damage, owner) {
+            const flashGeo = new THREE.SphereGeometry(radius, 16, 16); const flashMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.6 }); const flash = new THREE.Mesh(flashGeo, flashMat); flash.position.copy(pos); scene.add(flash);
+            const interval = setInterval(() => { flash.material.opacity -= 0.05; if(flash.material.opacity <= 0) { scene.remove(flash); clearInterval(interval); } }, 50); createExplosion(pos); 
+            const checkDamage = (tank) => {
+                if (tank.position.distanceTo(pos) < radius) {
+                    if (localPlayers.includes(tank)) { takeDamage(tank, damage); }
+                    else if (gameMode !== 'network') {
+                        createExplosion(tank.position); scene.remove(tank);
+                        if (enemies.includes(tank)) { enemies.splice(enemies.indexOf(tank), 1); if (localPlayers.includes(owner)) score += 200; }
+                        if (allies.includes(tank)) allies.splice(allies.indexOf(tank), 1);
+                    }
+                }
+            };
+            localPlayers.forEach(p => checkDamage(p)); [...enemies].forEach(e => checkDamage(e)); [...allies].forEach(a => checkDamage(a));
+        }
+
+        function spawnEnemy() {
+            if (isGameOver || gameMode !== 'single') return; 
+            const enemy = createTank(0xef4444); const angle = Math.random() * Math.PI * 2; const dist = 25 + Math.random() * 5; enemy.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist); enemies.push(enemy); scene.add(enemy);
+        }
+
+        window.spawnAlly = () => {
+            if (isGameOver || gameMode !== 'single') return;
+            const ally = createTank(0x4488ff); const dir = new THREE.Vector3(); localPlayers[0].getWorldDirection(dir); ally.position.copy(localPlayers[0].position).add(dir.multiplyScalar(-8)); ally.position.x += (Math.random() - 0.5) * 6; ally.position.z += (Math.random() - 0.5) * 6; ally.userData = { lastShot: 0, weapon: 'normal', weaponTimer: 0, slipTimer: 0 }; allies.push(ally); scene.add(ally);
+        };
+
+        window.removeAlly = () => { if (allies.length === 0) return; const ally = allies.pop(); createExplosion(ally.position); scene.remove(ally); };
+
+        function shoot(sourceTank, forceType = null) {
+            let type = forceType || sourceTank.userData.weapon || 'normal'; if (!forceType && sourceTank.userData.weaponTimer <= 0) type = 'normal';
+            let bulletGeo, bulletMat;
+            if (type === 'electric') { bulletGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3); bulletMat = new THREE.MeshBasicMaterial({ color: 0x00ffff }); } else if (type === 'missile') { bulletGeo = new THREE.ConeGeometry(0.2, 0.6, 8); bulletMat = new THREE.MeshBasicMaterial({ color: 0x9933ff }); } else if (type === 'oil') { bulletGeo = new THREE.SphereGeometry(0.4, 8, 8); bulletMat = new THREE.MeshBasicMaterial({ color: 0x111111 }); } else { bulletGeo = new THREE.SphereGeometry(0.2, 8, 8); bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 }); }
+            const bullet = new THREE.Mesh(bulletGeo, bulletMat); const direction = new THREE.Vector3(); sourceTank.getWorldDirection(direction); 
+            if (enemies.includes(sourceTank) && gameMode === 'single') { direction.x += (Math.random() - 0.5) * 0.8; direction.z += (Math.random() - 0.5) * 0.8; direction.normalize(); }
+            bullet.position.copy(sourceTank.position).add(new THREE.Vector3(0, 1.2, 0)); bullet.position.add(direction.clone().multiplyScalar(1.5)); 
+            if (type === 'missile') { bullet.rotation.x = Math.PI / 2; bullet.lookAt(bullet.position.clone().add(direction)); }
+            bullet.userData = { velocity: direction.multiplyScalar(SETTINGS.bulletSpeed), type: type, owner: sourceTank, life: 3.0 };
+            bullets.push(bullet); scene.add(bullet); createMuzzleFlash(bullet.position);
+            if (gameMode === 'network' && sourceTank === localPlayers[0]) broadcastShoot(type);
+        }
+
+        function createMuzzleFlash(pos) {
+            const flashGeo = new THREE.SphereGeometry(0.4, 8, 8); const flashMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8 }); const flash = new THREE.Mesh(flashGeo, flashMat); flash.position.copy(pos); scene.add(flash);
+            const interval = setInterval(() => { flash.scale.multiplyScalar(0.8); flash.material.opacity -= 0.1; if(flash.material.opacity <= 0) { scene.remove(flash); clearInterval(interval); } }, 30);
+        }
+
+        function createExplosion(pos) {
+            const particleCount = 8; const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3); const mat = new THREE.MeshBasicMaterial({ color: 0xff4400 });
+            for (let i = 0; i < particleCount; i++) { const mesh = new THREE.Mesh(geo, mat); mesh.position.copy(pos); const vel = new THREE.Vector3((Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.5 + 0.5, (Math.random() - 0.5) * 0.5); particles.push({ mesh: mesh, velocity: vel, life: 1.0 }); scene.add(mesh); }
+        }
+
+        function createLightning(start, end) {
+            const points = [start, new THREE.Vector3().lerpVectors(start, end, 0.5).add(new THREE.Vector3((Math.random() - 0.5) * 2, 0, (Math.random() - 0.5) * 2)), end];
+            const geo = new THREE.BufferGeometry().setFromPoints(points); const mat = new THREE.LineBasicMaterial({ color: 0x00ffff }); const line = new THREE.Line(geo, mat); scene.add(line); setTimeout(() => scene.remove(line), 100);
+        }
+
+        function updateRadar() {
+            const size = 150; const range = SETTINGS.boundarySize * 1.2; const center = size / 2; const scale = size / (range * 2);
+            radarCtx.clearRect(0, 0, size, size);
+            radarCtx.fillStyle = '#666';
+            obstacleColliders.forEach(box => { const centerX = (box.min.x + box.max.x) / 2; const centerZ = (box.min.z + box.max.z) / 2; const w = box.max.x - box.min.x; const h = box.max.z - box.min.z; radarCtx.fillRect(center + centerX * scale - (w*scale)/2, center + centerZ * scale - (h*scale)/2, w*scale, h*scale); });
+            radarCtx.fillStyle = '#ffff00'; powerups.forEach(p => { radarCtx.beginPath(); radarCtx.arc(center + p.position.x * scale, center + p.position.z * scale, 3, 0, Math.PI*2); radarCtx.fill(); });
+            radarCtx.fillStyle = '#ef4444'; enemies.forEach(e => { radarCtx.beginPath(); radarCtx.arc(center + e.position.x * scale, center + e.position.z * scale, 3, 0, Math.PI*2); radarCtx.fill(); });
+            radarCtx.fillStyle = '#4488ff'; allies.forEach(a => { radarCtx.beginPath(); radarCtx.arc(center + a.position.x * scale, center + a.position.z * scale, 3, 0, Math.PI*2); radarCtx.fill(); });
+            if (localPlayers.length > 0) { radarCtx.fillStyle = '#4ade80'; radarCtx.beginPath(); radarCtx.arc(center + localPlayers[0].position.x * scale, center + localPlayers[0].position.z * scale, 4, 0, Math.PI*2); radarCtx.fill(); }
+            if (localPlayers.length > 1) { radarCtx.fillStyle = '#4488ff'; radarCtx.beginPath(); radarCtx.arc(center + localPlayers[1].position.x * scale, center + localPlayers[1].position.z * scale, 4, 0, Math.PI*2); radarCtx.fill(); }
+        }
+
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+            if (localPlayers.length === 0) return;
+            if (!lastFrameTime) lastFrameTime = currentTime;
+            const deltaTime = currentTime - lastFrameTime;
+            if (deltaTime < frameInterval) return; 
+            lastFrameTime = currentTime - (deltaTime % frameInterval);
+            if (isPaused || isGameOver) return;
+
+            updateRadar();
+            document.getElementById('ally-count').innerText = allies.length; document.getElementById('enemy-count').innerText = enemies.length; 
+            
+            // FIXED: CORRECT ID REFERENCES FOR SPLIT BOMB UI WITH SAFETY CHECK
+            if (localPlayers[0]) {
+                document.getElementById('bomb-count-p1').innerText = localPlayers[0].userData.bombs;
+            }
+            if (localPlayers[1]) {
+                document.getElementById('bomb-count-p2').innerText = localPlayers[1].userData.bombs;
+            }
+
+            if (gameMode !== 'network' && Date.now() - lastPowerupTime > SETTINGS.powerupSpawnRate) { spawnPowerup(); lastPowerupTime = Date.now(); }
+
+            for (let i = puddles.length - 1; i >= 0; i--) {
+                const puddle = puddles[i]; puddle.userData.life -= deltaTime / 1000;
+                if(puddle.userData.life < 2.0) puddle.material.opacity = puddle.userData.life * 0.4;
+                if (puddle.userData.life <= 0) { scene.remove(puddle); puddles.splice(i, 1); continue; }
+                const allTanks = [...localPlayers, ...allies, ...enemies];
+                for (const tank of allTanks) { if (tank.position.distanceTo(puddle.position) < 3.0) tank.userData.slipTimer = 0.2; }
+            }
+
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const p = powerups[i]; p.rotation.y += 0.05; p.rotation.x = Math.sin(Date.now() * 0.002) * 0.2;
+                let collectors = [...localPlayers, ...allies, ...enemies];
+                for (const tank of collectors) {
+                    if (tank.position.distanceTo(p.position) < 1.5) {
+                        const type = p.userData.type;
+                        if (type === 'bomb') tank.userData.bombs++; else { tank.userData.weapon = type; tank.userData.weaponTimer = 10.0; }
+                        
+                        // Network: delete doc
+                        if(gameMode === 'network' && p.userData.dbId) {
+                            deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bt_powerups', p.userData.dbId));
+                        }
+                        
+                        scene.remove(p); powerups.splice(i, 1); break;
+                    }
+                }
+            }
+
+            // Smooth Remote Players
+            Object.values(remotePlayers).forEach(tank => {
+                if (tank.parent && tank.userData.targetX !== undefined) {
+                    // Position Lerp
+                    tank.position.x += (tank.userData.targetX - tank.position.x) * 0.2; 
+                    tank.position.z += (tank.userData.targetZ - tank.position.z) * 0.2;
+                    
+                    // Rotation Lerp (Simple)
+                    let delta = tank.userData.targetRot - tank.rotation.y;
+                    // Normalize delta to take shortest path
+                    while (delta > Math.PI) delta -= Math.PI * 2;
+                    while (delta < -Math.PI) delta += Math.PI * 2;
+                    tank.rotation.y += delta * 0.2;
+                }
+            });
+
+            const updateTankState = (tank) => {
+                if (tank.userData.weaponTimer > 0) { tank.userData.weaponTimer -= deltaTime / 1000; if (tank.userData.weaponTimer <= 0) tank.userData.weapon = 'normal'; }
+                if (tank.userData.slipTimer > 0) tank.userData.slipTimer -= deltaTime / 1000;
+            };
+            localPlayers.forEach(updateTankState); allies.forEach(updateTankState); enemies.forEach(updateTankState);
+
+            const wName = localPlayers[0].userData.weapon === 'normal' ? '' : localPlayers[0].userData.weapon.toUpperCase();
+            const wTime = Math.ceil(localPlayers[0].userData.weaponTimer);
+            document.getElementById('weapon-status').innerText = wName ? `${wName}: ${wTime}s` : '';
+            if(localPlayers[0].userData.slipTimer > 0) { document.getElementById('weapon-status').innerText += " (SLIPPING!)"; document.getElementById('weapon-status').style.color = 'orange'; } else { document.getElementById('weapon-status').style.color = localPlayers[0].userData.weapon === 'missile' ? '#9933ff' : '#00ffff'; }
+
+            for (let i = activeBombs.length - 1; i >= 0; i--) {
+                const b = activeBombs[i]; b.userData.timer -= deltaTime / 1000; b.material.color.setHex(Math.floor(Date.now() / 100) % 2 === 0 ? 0xff0000 : 0x000000);
+                if (b.userData.timer <= 0) { explode(b.position, 10, 50, b.userData.owner); scene.remove(b); activeBombs.splice(i, 1); }
+            }
+
+            localPlayers.forEach((tank, index) => {
+                let inputVector = new THREE.Vector3(0, 0, 0);
+                if (tank.userData.slipTimer <= 0) {
+                    let moveSpeed = 0, rotateSpeed = 0.05;
+                    
+                    if (index === 0) { 
+                        // Player 1 Logic
+                        if (gameMode === 'single' && controlScheme === 'standard') {
+                            // Singleplayer WASD Standard Mode
+                            let mx=0, mz=0; 
+                            if (keys.w) mz-=1; if (keys.s) mz+=1; if (keys.a) mx-=1; if (keys.d) mx+=1;
+                            inputVector = new THREE.Vector3(mx, 0, mz).normalize().multiplyScalar(SETTINGS.playerSpeed);
+                        } else if (gameMode === 'local') {
+                            // Local Multiplayer P1 (Strictly WASD)
+                            if (keys.a) tank.rotation.y += rotateSpeed; 
+                            if (keys.d) tank.rotation.y -= rotateSpeed;
+                            if (keys.w) moveSpeed = SETTINGS.playerSpeed; 
+                            if (keys.s) moveSpeed = -SETTINGS.playerSpeed;
+                        } else {
+                            // Singleplayer Tank Mode OR Network Mode (WASD OR Arrows)
+                            if (keys.a || keys.arrowleft) tank.rotation.y += rotateSpeed; 
+                            if (keys.d || keys.arrowright) tank.rotation.y -= rotateSpeed;
+                            if (keys.w || keys.arrowup) moveSpeed = SETTINGS.playerSpeed; 
+                            if (keys.s || keys.arrowdown) moveSpeed = -SETTINGS.playerSpeed;
+                        }
+                    } else {
+                        // Player 2 Logic (Always Arrows)
+                        if (keys.arrowleft) tank.rotation.y += rotateSpeed; 
+                        if (keys.arrowright) tank.rotation.y -= rotateSpeed;
+                        if (keys.arrowup) moveSpeed = SETTINGS.playerSpeed; 
+                        if (keys.arrowdown) moveSpeed = -SETTINGS.playerSpeed;
+                    }
+
+                    if (moveSpeed !== 0) { const dir = new THREE.Vector3(); tank.getWorldDirection(dir); inputVector = dir.multiplyScalar(moveSpeed); }
+                } else { const dir = new THREE.Vector3(); tank.getWorldDirection(dir); inputVector = dir.multiplyScalar(SETTINGS.playerSpeed * 1.2); tank.rotation.y += 0.2; }
+
+                if (inputVector.lengthSq() > 0) {
+                    if (inputVector.x !== 0) { tank.position.x += inputVector.x; tank.position.x = Math.max(-SETTINGS.boundarySize, Math.min(SETTINGS.boundarySize, tank.position.x)); if (checkCollision(tank.position) || checkTankOverlap(tank.position, tank)) tank.position.x -= inputVector.x; }
+                    if (inputVector.z !== 0) { tank.position.z += inputVector.z; tank.position.z = Math.max(-SETTINGS.boundarySize, Math.min(SETTINGS.boundarySize, tank.position.z)); if (checkCollision(tank.position) || checkTankOverlap(tank.position, tank)) tank.position.z -= inputVector.z; }
+                }
+                if (index === 0 && gameMode === 'single' && controlScheme === 'standard') {
+                    if (inputMode === 'keyboard') { if (keys.arrowleft) tank.rotation.y += 0.05; if (keys.arrowright) tank.rotation.y -= 0.05; }
+                    else { raycaster.setFromCamera(mouse, camera); raycaster.ray.intersectPlane(groundPlane, targetPoint); tank.lookAt(targetPoint.x, tank.position.y, targetPoint.z); }
+                }
+            });
+
+            if (keys.space && (gameMode !== 'local' || Date.now() - localPlayers[0].userData.lastShot > SETTINGS.fireRate)) { 
+                if(gameMode === 'single') {
+                    if(Date.now() - localPlayers[0].userData.lastShot > SETTINGS.fireRate) {
+                       shoot(localPlayers[0]); 
+                       localPlayers[0].userData.lastShot = Date.now();
+                    }
+                } else {
+                    shoot(localPlayers[0]); 
+                    localPlayers[0].userData.lastShot = Date.now(); 
+                }
+            }
+            if (keys.v && localPlayers[0].userData.bombs > 0) { dropBomb(localPlayers[0]); localPlayers[0].userData.bombs--; keys.v = false; }
+            
+            if (gameMode === 'local' && localPlayers[1]) {
+                if (keys.enter && Date.now() - localPlayers[1].userData.lastShot > SETTINGS.fireRate) { 
+                    shoot(localPlayers[1]); 
+                    localPlayers[1].userData.lastShot = Date.now(); 
+                }
+                if (keys.m && localPlayers[1].userData.bombs > 0) { dropBomb(localPlayers[1]); localPlayers[1].userData.bombs--; keys.m = false; }
+            }
+
+            if (gameMode === 'local' && localPlayers.length > 1) {
+                const p1 = localPlayers[0].position; const p2 = localPlayers[1].position; const center = p1.clone().add(p2).multiplyScalar(0.5); const dist = p1.distanceTo(p2);
+                camera.position.x += (center.x - camera.position.x) * 0.1; const targetZ = center.z + 20 + (dist * 0.5); camera.position.z += (targetZ - camera.position.z) * 0.1;
+            } else {
+                const p = localPlayers[0]; camera.position.x += (p.position.x - camera.position.x) * 0.1; camera.position.z += (p.position.z + 20 - camera.position.z) * 0.1;
+            }
+            
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                if (b.userData.type === 'missile') {
+                    let target = null, minDist = 20; let potentialTargets = enemies;
+                    if (gameMode === 'local') potentialTargets = localPlayers.filter(p => p !== b.userData.owner);
+                    else if (gameMode === 'single') potentialTargets = b.userData.owner === localPlayers[0] ? enemies : [localPlayers[0], ...allies];
+                    potentialTargets.forEach(t => { const d = b.position.distanceTo(t.position); if (d < minDist) { minDist = d; target = t; } });
+                    if (target) { const desiredDir = new THREE.Vector3().subVectors(target.position, b.position).normalize(); const currentDir = b.userData.velocity.clone().normalize(); currentDir.lerp(desiredDir, 0.1).normalize(); b.userData.velocity = currentDir.multiplyScalar(SETTINGS.bulletSpeed); b.lookAt(b.position.clone().add(currentDir)); }
+                }
+                b.position.add(b.userData.velocity); b.userData.life -= deltaTime / 1000;
+                if (b.userData.life <= 0 || b.position.distanceTo(localPlayers[0].position) > 80) { if (b.userData.type === 'missile') explode(b.position, 5, 20, b.userData.owner); scene.remove(b); bullets.splice(i, 1); continue; }
+                let hit = false;
+                let targets = [];
+                if (gameMode === 'local') targets = localPlayers.filter(p => p !== b.userData.owner);
+                else targets = (b.userData.owner === localPlayers[0] || allies.includes(b.userData.owner)) ? enemies : [localPlayers[0], ...allies];
+                for (let j = targets.length - 1; j >= 0; j--) {
+                    const t = targets[j];
+                    if (b.position.distanceTo(t.position) < 1.5) {
+                        scene.remove(b); bullets.splice(i, 1); hit = true;
+                        if (b.userData.type === 'electric') takeDamageOrDestroy(t, 20); else if (b.userData.type === 'missile') explode(b.position, 6, 30, b.userData.owner); else if (b.userData.type === 'oil') createPuddle(t.position); else { takeDamageOrDestroy(t, 10); createExplosion(t.position); }
+                        break;
+                    }
+                }
+                if (!hit) { for (const box of obstacleColliders) { if (box.containsPoint(b.position)) { scene.remove(b); bullets.splice(i, 1); if (b.userData.type === 'missile') explode(b.position, 5, 20, b.userData.owner); if (b.userData.type === 'oil') createPuddle(b.position); break; } } }
+            }
+
+            if (gameMode === 'single') {
+                const dynamicSpawnDelay = SETTINGS.spawnRate / (1 + allies.length * 0.5);
+                if (Date.now() - lastSpawnTime > dynamicSpawnDelay) { spawnEnemy(); lastSpawnTime = Date.now(); if (SETTINGS.spawnRate > 1000) SETTINGS.spawnRate -= 10; }
+                updateAI(allies, enemies); updateAI(enemies, [localPlayers[0], ...allies]);
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) { const p = particles[i]; p.mesh.position.add(p.velocity); p.velocity.y -= 0.02; p.life -= 0.03; p.mesh.scale.setScalar(p.life); if (p.mesh.position.y < 0 || p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); } }
+            renderer.render(scene, camera);
+        }
+
+        function updateAI(group, targets) {
+             for (let i = group.length - 1; i >= 0; i--) {
+                const tank = group[i];
+                if (tank.userData.slipTimer > 0) {
+                    const dir = new THREE.Vector3(); tank.getWorldDirection(dir);
+                    const move = dir.multiplyScalar(SETTINGS.playerSpeed * 1.2); tank.position.add(move); tank.rotation.y += 0.2;
+                    const oldPos = tank.position.clone().sub(move);
+                    if (checkCollision(tank.position) || checkTankOverlap(tank.position, tank)) tank.position.copy(oldPos);
+                    continue; 
+                }
+                let target = null; let minDist = 999;
+                targets.forEach(t => { const d = tank.position.distanceTo(t.position); if (d < minDist) { minDist = d; target = t; } });
+                if (target) {
+                    tank.lookAt(target.position);
+                    if (minDist > (tank.userData.weapon === 'missile' ? 12 : 8)) {
+                         const dir = new THREE.Vector3().subVectors(target.position, tank.position).normalize();
+                         const oldPos = tank.position.clone(); const speed = enemies.includes(tank) ? SETTINGS.enemySpeed : SETTINGS.allySpeed;
+                         tank.position.add(dir.multiplyScalar(speed));
+                         if(checkCollision(tank.position) || checkTankOverlap(tank.position, tank)) tank.position.copy(oldPos);
+                    }
+                    const now = Date.now();
+                    const isEnemy = enemies.includes(tank);
+                    let fireRate = tank.userData.weapon === 'normal' ? SETTINGS.fireRate * 1.5 : SETTINGS.fireRate;
+                    if (isEnemy && tank.userData.weapon === 'normal') fireRate = SETTINGS.fireRate * 4.0;
+                    if (now - tank.userData.lastShot > fireRate) { shoot(tank); tank.userData.lastShot = now; }
+                     if (minDist < 2.0 && enemies.includes(tank)) { createExplosion(tank.position); scene.remove(tank); enemies.splice(enemies.indexOf(tank), 1); takeDamageOrDestroy(target, 20); }
+                }
+             }
+        }
+
+        function takeDamageOrDestroy(tank, amount) {
+            // Updated to handle correct arguments (tank, amount) from all calls
+            if (localPlayers.includes(tank)) {
+                takeDamage(tank, amount);
+            } else {
+                if (gameMode !== 'network') {
+                    createExplosion(tank.position); scene.remove(tank);
+                    if (enemies.includes(tank)) { enemies.splice(enemies.indexOf(tank), 1); score += 100; document.getElementById('score-board').innerText = score; }
+                    if (allies.includes(tank)) allies.splice(allies.indexOf(tank), 1);
+                } else { createExplosion(tank.position); }
+            }
+        }
+
+        function takeDamage(tank, amount) {
+            tank.userData.hp -= amount;
+            if (tank === localPlayers[0]) { const pct = Math.max(0, (tank.userData.hp / SETTINGS.playerMaxHealth) * 100); document.getElementById('health-fill-p1').style.width = pct + '%'; }
+            else if (tank === localPlayers[1]) { const pct = Math.max(0, (tank.userData.hp / SETTINGS.playerMaxHealth) * 100); document.getElementById('health-fill-p2').style.width = pct + '%'; }
+            if (tank.userData.hp <= 0) {
+                if (localPlayers.includes(tank)) {
+                    createExplosion(tank.position); scene.remove(tank); isGameOver = true;
+                    const winner = tank === localPlayers[0] ? "PLAYER 2" : "PLAYER 1";
+                    if (gameMode === 'local') document.getElementById('game-over-msg').innerText = `${winner} WINS!`;
+                    else document.getElementById('game-over-msg').innerText = "GAME OVER";
+                    document.getElementById('game-over').style.display = 'block';
+                }
+            }
+        }
+
+        window.togglePause = () => { isPaused = !isPaused; const btn = document.getElementById('pause-btn'); btn.innerText = isPaused ? "RESUME" : "PAUSE"; btn.style.background = isPaused ? "#ef4444" : "rgba(0, 0, 0, 0.6)"; };
+        window.toggleControlScheme = () => {
+            const btn = document.getElementById('control-btn'); const hint = document.getElementById('controls-hint');
+            if (controlScheme === 'standard') { controlScheme = 'tank'; btn.innerText = "Mode: TANK"; hint.innerText = "Arrows to Drive & Turn | Space to Shoot"; }
+            else { controlScheme = 'standard'; btn.innerText = "Mode: WASD"; hint.innerText = "WASD to Move | Mouse/Arrows to Aim | Space to Shoot"; }
+        };
+
+        function checkCollision(pos) {
+            const halfSize = 0.8; const playerBox = new THREE.Box3(new THREE.Vector3(pos.x - halfSize, 0, pos.z - halfSize), new THREE.Vector3(pos.x + halfSize, 2, pos.z + halfSize));
+            for (const box of obstacleColliders) { if (playerBox.intersectsBox(box)) return true; } return false;
+        }
+
+        function checkTankOverlap(pos, selfTank) {
+            const crashDist = 1.6; const allTanks = [...localPlayers, ...allies, ...enemies];
+            for (const other of allTanks) { if (selfTank !== other && pos.distanceTo(other.position) < crashDist) return true; } return false;
+        }
+
+        function updateKey(e, state) {
+            if (state && isGameOver && (e.code === 'Space' || e.code === 'Enter')) { restartGame(); return; }
+            
+            // Prevent scrolling on arrow keys and space
+            if (state && (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'Space')) {
+                e.preventDefault();
+            }
+
+            if (state && gameMode === 'single') { if (e.key === '=' || e.key === '+') spawnAlly(); if (e.key === '-' || e.key === '_') removeAlly(); }
+            const key = e.key.toLowerCase(); if (keys.hasOwnProperty(key)) keys[key] = state;
+            if (e.code === 'Space') keys.space = state; if (e.code === 'Enter') keys.enter = state;
+            if (e.key === 'ArrowLeft') keys.arrowleft = state; if (e.key === 'ArrowRight') keys.arrowright = state; if (e.key === 'ArrowUp') keys.arrowup = state; if (e.key === 'ArrowDown') keys.arrowdown = state;
+            if (e.key === 'b') keys.b = state; if (e.key === 'v') keys.v = state; if (e.key === 'm') keys.m = state;
+            if (controlScheme === 'standard' && state && (e.key.startsWith('Arrow'))) inputMode = 'keyboard';
+            if (state && (e.key === 'p' || e.key === 'P' || e.key === 'Escape')) togglePause();
+        }
+
+        function onMouseMove(e) { if (isPaused) return; if (controlScheme === 'standard') { inputMode = 'mouse'; mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; } }
+        function tryShoot() { if (isGameOver || isPaused) return; if (gameMode !== 'local') { const now = Date.now(); if (now - lastShotTime > SETTINGS.fireRate) { shoot(localPlayers[0]); lastShotTime = now; } } }
+        function onTouch(e) {
+            e.preventDefault(); if (isPaused) return; const touch = e.touches[0]; mouse.x = (touch.clientX / window.innerWidth) * 2 - 1; mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera); raycaster.ray.intersectPlane(groundPlane, targetPoint);
+            if (localPlayers[0]) {
+                const dx = targetPoint.x - localPlayers[0].position.x; const dz = targetPoint.z - localPlayers[0].position.z;
+                if(Math.abs(dx) > 1 || Math.abs(dz) > 1) {
+                    const moveVec = new THREE.Vector3(dx, 0, dz).normalize().multiplyScalar(SETTINGS.playerSpeed);
+                    const oldX = localPlayers[0].position.x; localPlayers[0].position.x += moveVec.x; localPlayers[0].position.x = Math.max(-SETTINGS.boundarySize, Math.min(SETTINGS.boundarySize, localPlayers[0].position.x));
+                    if(checkCollision(localPlayers[0].position) || checkTankOverlap(localPlayers[0].position, localPlayers[0])) localPlayers[0].position.x = oldX;
+                    const oldZ = localPlayers[0].position.z; localPlayers[0].position.z += moveVec.z; localPlayers[0].position.z = Math.max(-SETTINGS.boundarySize, Math.min(SETTINGS.boundarySize, localPlayers[0].position.z));
+                    if(checkCollision(localPlayers[0].position) || checkTankOverlap(localPlayers[0].position, localPlayers[0])) localPlayers[0].position.z = oldZ;
+                    
+                    // Added LookAt for Touch Rotation
+                    localPlayers[0].lookAt(targetPoint.x, localPlayers[0].position.y, targetPoint.z);
+                } tryShoot();
+            }
+        }
+
+        window.restartGame = () => {
+            // Removed global playerHealth assignment
+            score = 0; isGameOver = false;
+            bullets.forEach(b => scene.remove(b)); enemies.forEach(e => scene.remove(e)); allies.forEach(a => scene.remove(a)); powerups.forEach(p => scene.remove(p)); activeBombs.forEach(b => scene.remove(b)); puddles.forEach(p => scene.remove(p));
+            bullets = []; enemies = []; allies = []; powerups = []; activeBombs = []; puddles = [];
+            
+            if (localPlayers.length > 0) {
+                const p1 = localPlayers[0];
+                if (!p1.parent) scene.add(p1); // Add back to scene
+                p1.position.set(0, 0, 0); 
+                p1.userData.hp = SETTINGS.playerMaxHealth; 
+                p1.userData.bombs = 0; 
+                p1.userData.weapon = 'normal'; 
+                p1.userData.weaponTimer = 0; 
+                p1.userData.slipTimer = 0;
+                
+                if (gameMode === 'network') { 
+                    p1.position.x = (Math.random() - 0.5) * 40; 
+                    p1.position.z = (Math.random() - 0.5) * 40; 
+                }
+                
+                if (localPlayers[1]) { 
+                    const p2 = localPlayers[1];
+                    if (!p2.parent) scene.add(p2); // Add back to scene
+                    p2.position.set(5, 0, 5); 
+                    p2.userData.hp = SETTINGS.playerMaxHealth; 
+                    p2.userData.bombs = 0; 
+                    p2.userData.weapon = 'normal'; 
+                    p2.userData.weaponTimer = 0; 
+                    p2.userData.slipTimer = 0; 
+                }
+            }
+            document.getElementById('health-fill-p1').style.width = '100%'; document.getElementById('health-fill-p2').style.width = '100%'; document.getElementById('score-board').innerText = '0'; document.getElementById('game-over').style.display = 'none';
+            animate(0);
+        };
+    </script>
+</body>
+</html>
