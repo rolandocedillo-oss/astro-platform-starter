@@ -68,10 +68,9 @@
         }
 
         /* Vertical Arsenal System Styles */
-        #arsenal-panel {
+        .arsenal-panel {
             position: absolute;
             bottom: 20px;
-            left: 20px;
             width: auto;
             background: rgba(0, 0, 0, 0.8);
             border: 2px solid #0ff;
@@ -83,6 +82,33 @@
             flex-direction: row;
             gap: 10px;
             align-items: center;
+        }
+
+        #arsenal-panel-p1 {
+            right: 20px;
+        }
+
+        #arsenal-panel-p2 {
+            left: 20px;
+            border-color: #fa0;
+        }
+
+        .arsenal-player {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .arsenal-label {
+            font-size: 12px;
+            color: #0ff;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        
+        #arsenal-panel-p2 .arsenal-label {
+            color: #fa0;
         }
 
         .arsenal-title {
@@ -223,7 +249,7 @@
             padding: 20px;
         }
 
-        #start-screen, #game-over-screen, #tactical-screen, #joke-overlay {
+        #game-over-screen, #tactical-screen, #joke-overlay {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -239,6 +265,59 @@
             min-width: 300px;
             z-index: 100;
         }
+
+        #start-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 120;
+            pointer-events: auto;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .menu-box {
+            background: #222;
+            padding: 40px;
+            border-radius: 10px;
+            border: 2px solid #4ade80;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+            max-width: 520px;
+            width: 90%;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .menu-btn {
+            background: #4ade80;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            color: #003300;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 8px;
+            min-width: 220px;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .menu-btn:hover { background: #6ee7a0; }
+        .menu-btn:active { transform: scale(0.97); }
+        .menu-btn.active { background: #4ade80; color: #003300; }
+        .menu-btn.secondary-btn { background: #4488ff; color: #001133; }
+        .menu-btn.secondary-btn:hover { background: #6699ff; }
+        .menu-btn.local-btn { background: #ffaa00; color: #331100; }
+        .menu-btn.local-btn:hover { background: #ffcc00; }
+        .menu-btn.danger-btn { background: #ff5555; color: #330000; }
+        .menu-btn.danger-btn:hover { background: #ff7777; }
         
         #joke-overlay {
             display: flex;
@@ -364,8 +443,37 @@
             margin-top: 20px;
         }
 
+        .mode-select-container.mode-buttons {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 1fr;
+            align-items: stretch;
+            margin-bottom: 12px;
+        }
+
+        .mode-select-container.mode-buttons .menu-btn {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 54px;
+            margin: 0;
+        }
+
+        .menu-back {
+            display: inline-block;
+            margin-top: 4px;
+        }
+
         .hidden {
             display: none !important;
+        }
+
+        .menu-hidden {
+            opacity: 0;
+            transform: translate(-50%, -50%) translateY(8px) scale(0.98);
+            pointer-events: none;
         }
 
         /* Mobile controls hint */
@@ -379,11 +487,10 @@
         @media (max-width: 768px) {
             .mobile-hint { display: block; }
             h1 { font-size: 28px; }
-            #start-screen, #game-over-screen, #joke-overlay { width: 85%; padding: 20px; }
-            #arsenal-panel {
-                bottom: 20%; /* Move up on mobile */
-                left: 10px;
-            }
+            #game-over-screen, #joke-overlay { width: 85%; padding: 20px; }
+            .menu-box { padding: 24px; }
+            #arsenal-panel-p1 { bottom: 20%; right: 10px; }
+            #arsenal-panel-p2 { bottom: 20%; left: 10px; }
             .boss-warning { font-size: 30px; }
             .mode-select-container { flex-direction: column; gap: 10px; }
         }
@@ -397,11 +504,13 @@
         <div class="hud-top">
             <div class="hud-left">
                 <div id="levelDisplay" style="color: #ff0;">LEVEL: 1</div>
-                <div id="scoreDisplay">SCORE: 0</div>
+                <div id="scoreDisplayP1">P1 SCORE: 0</div>
+                <div id="scoreDisplayP2">P2 SCORE: 0</div>
             </div>
             <div class="hud-right">
                 <div id="bossTimer">BOSS: 2:00</div>
-                <div id="livesDisplay">LIVES: 3</div>
+                <div id="livesDisplayP1">P1 LIVES: 3</div>
+                <div id="livesDisplayP2">P2 LIVES: 3</div>
             </div>
         </div>
         
@@ -409,19 +518,45 @@
         <div id="bossWarning" class="boss-warning">⚠ WARNING: BOSS DETECTED ⚠</div>
 
         <!-- Arsenal Panel -->
-        <div id="arsenal-panel">
-            <div class="heat-container">
-                <div class="heat-bar-bg">
-                    <div id="heat-bar-fill"></div>
+        <div id="arsenal-panel-p2" class="arsenal-panel">
+            <div>
+                <div class="arsenal-label">P2</div>
+                <div class="arsenal-player">
+                    <div class="heat-container">
+                        <div class="heat-bar-bg">
+                            <div id="heat-bar-fill-p2"></div>
+                        </div>
+                        <div class="heat-label">HEAT</div>
+                    </div>
+                    <div class="modules-grid">
+                        <div id="mod-spread-p2" class="module-icon">S <span id="mod-spread-lvl-p2" class="module-sub">0</span></div>
+                        <div id="mod-laser-p2" class="module-icon">L <span id="mod-laser-lvl-p2" class="module-sub">0</span></div>
+                        <div id="mod-missile-p2" class="module-icon">M <span id="mod-missile-lvl-p2" class="module-sub">0</span></div>
+                        <div id="mod-rapid-p2" class="module-icon">R</div>
+                        <div id="mod-shield-p2" class="module-icon">♥ <span id="mod-shield-lvl-p2" class="module-sub">0</span></div>
+                    </div>
                 </div>
-                <div class="heat-label">HEAT</div>
             </div>
-            <div class="modules-grid">
-                <div id="mod-spread" class="module-icon">S <span id="mod-spread-lvl" class="module-sub">0</span></div>
-                <div id="mod-laser" class="module-icon">L <span id="mod-laser-lvl" class="module-sub">0</span></div>
-                <div id="mod-missile" class="module-icon">M <span id="mod-missile-lvl" class="module-sub">0</span></div>
-                <div id="mod-rapid" class="module-icon">R</div>
-                <div id="mod-shield" class="module-icon">♥ <span id="mod-shield-lvl" class="module-sub">0</span></div>
+        </div>
+
+        <div id="arsenal-panel-p1" class="arsenal-panel">
+            <div>
+                <div class="arsenal-label">P1</div>
+                <div class="arsenal-player">
+                    <div class="heat-container">
+                        <div class="heat-bar-bg">
+                            <div id="heat-bar-fill-p1"></div>
+                        </div>
+                        <div class="heat-label">HEAT</div>
+                    </div>
+                    <div class="modules-grid">
+                        <div id="mod-spread-p1" class="module-icon">S <span id="mod-spread-lvl-p1" class="module-sub">0</span></div>
+                        <div id="mod-laser-p1" class="module-icon">L <span id="mod-laser-lvl-p1" class="module-sub">0</span></div>
+                        <div id="mod-missile-p1" class="module-icon">M <span id="mod-missile-lvl-p1" class="module-sub">0</span></div>
+                        <div id="mod-rapid-p1" class="module-icon">R</div>
+                        <div id="mod-shield-p1" class="module-icon">♥ <span id="mod-shield-lvl-p1" class="module-sub">0</span></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -430,7 +565,7 @@
             <div id="powerUpMsg" class="powerup-msg">POWER UP!</div>
         </div>
         <div class="hud-bottom">
-            <button id="tacticalBtn" class="sparkle-btn hidden">✨ Tactical Analysis</button>
+            <button id="tacticalBtn" class="sparkle-btn hidden" style="padding: 6px 12px; font-size: 12px;">Pause</button>
         </div>
     </div>
 
@@ -442,26 +577,40 @@
     </div>
 
     <div id="start-screen">
-        <h1>Neon Defender</h1>
-        <div id="mission-briefing">
-            <p>System Initialized.</p>
+        <div class="menu-box" id="menu-player">
+            <h1>Neon Defender</h1>
+            <p>Select Player Mode</p>
+            <div class="mode-select-container">
+                <button id="playerOneBtn" class="menu-btn active">1 Player</button>
+                <button id="playerTwoBtn" class="menu-btn local-btn">2 Player Local</button>
+            </div>
+            <div class="mode-select-container">
+                <button id="playerOnlineBtn" class="menu-btn secondary-btn" disabled>2 Player Online (Soon)</button>
+            </div>
         </div>
-        <div class="mission-stats hidden" id="mission-modifiers">
-            <div class="stat-item">SPD: <span class="stat-val" id="mod-spd">100%</span></div>
-            <div class="stat-item">HP: <span class="stat-val" id="mod-hp">100%</span></div>
-            <div class="stat-item">SWARM: <span class="stat-val" id="mod-spawn">100%</span></div>
+
+        <div class="menu-box menu-hidden" id="menu-mode">
+            <h1>Neon Defender</h1>
+            <div id="mission-briefing">
+                <p>System Initialized.</p>
+            </div>
+            <div class="mission-stats hidden" id="mission-modifiers">
+                <div class="stat-item">SPD: <span class="stat-val" id="mod-spd">100%</span></div>
+                <div class="stat-item">HP: <span class="stat-val" id="mod-hp">100%</span></div>
+                <div class="stat-item">SWARM: <span class="stat-val" id="mod-spawn">100%</span></div>
+            </div>
+            <div class="ai-text" id="mission-text">
+                Select Operation Mode...
+            </div>
+            <button id="genMissionBtn" class="menu-btn secondary-btn">Generate Mission</button>
+            
+            <div class="mode-select-container mode-buttons">
+                <button id="startNormalBtn" class="menu-btn">Mission Mode</button>
+                <button id="startBossBtn" class="menu-btn danger-btn">Boss Rush</button>
+            </div>
+            <button id="backToPlayerBtn" class="menu-btn secondary-btn menu-back">Back</button>
+            <p class="mobile-hint">Touch & Drag to Move/Shoot</p>
         </div>
-        <div class="ai-text" id="mission-text">
-            Select Operation Mode...
-        </div>
-        <button id="genMissionBtn" class="sparkle-btn">✨ Generate Mission</button>
-        
-        <div class="mode-select-container">
-            <button id="startNormalBtn">Normal Mission</button>
-            <button id="startBossBtn" style="border-color: #f55; color: #f55;">Boss Rush Mode</button>
-        </div>
-        
-        <p class="mobile-hint">Touch & Drag to Move/Shoot</p>
     </div>
 
     <div id="tactical-screen" class="hidden">
@@ -485,28 +634,69 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('scoreDisplay');
+        const scoreP1El = document.getElementById('scoreDisplayP1');
+        const scoreP2El = document.getElementById('scoreDisplayP2');
         const levelEl = document.getElementById('levelDisplay');
-        const livesEl = document.getElementById('livesDisplay');
+        const livesP1El = document.getElementById('livesDisplayP1');
+        const livesP2El = document.getElementById('livesDisplayP2');
         const levelUpMsg = document.getElementById('levelUpMsg');
         const powerUpMsg = document.getElementById('powerUpMsg');
         const bossWarningEl = document.getElementById('bossWarning');
         const bossTimerEl = document.getElementById('bossTimer');
         
         // Arsenal UI
-        const heatBarFill = document.getElementById('heat-bar-fill');
-        const modSpread = document.getElementById('mod-spread');
-        const modSpreadLvl = document.getElementById('mod-spread-lvl');
-        const modLaser = document.getElementById('mod-laser');
-        const modLaserLvl = document.getElementById('mod-laser-lvl');
-        const modMissile = document.getElementById('mod-missile');
-        const modMissileLvl = document.getElementById('mod-missile-lvl');
-        const modRapid = document.getElementById('mod-rapid');
-        const modShield = document.getElementById('mod-shield');
-        const modShieldLvl = document.getElementById('mod-shield-lvl');
+        const heatBarFillP1 = document.getElementById('heat-bar-fill-p1');
+        const modSpreadP1 = document.getElementById('mod-spread-p1');
+        const modSpreadLvlP1 = document.getElementById('mod-spread-lvl-p1');
+        const modLaserP1 = document.getElementById('mod-laser-p1');
+        const modLaserLvlP1 = document.getElementById('mod-laser-lvl-p1');
+        const modMissileP1 = document.getElementById('mod-missile-p1');
+        const modMissileLvlP1 = document.getElementById('mod-missile-lvl-p1');
+        const modRapidP1 = document.getElementById('mod-rapid-p1');
+        const modShieldP1 = document.getElementById('mod-shield-p1');
+        const modShieldLvlP1 = document.getElementById('mod-shield-lvl-p1');
+
+        const heatBarFillP2 = document.getElementById('heat-bar-fill-p2');
+        const modSpreadP2 = document.getElementById('mod-spread-p2');
+        const modSpreadLvlP2 = document.getElementById('mod-spread-lvl-p2');
+        const modLaserP2 = document.getElementById('mod-laser-p2');
+        const modLaserLvlP2 = document.getElementById('mod-laser-lvl-p2');
+        const modMissileP2 = document.getElementById('mod-missile-p2');
+        const modMissileLvlP2 = document.getElementById('mod-missile-lvl-p2');
+        const modRapidP2 = document.getElementById('mod-rapid-p2');
+        const modShieldP2 = document.getElementById('mod-shield-p2');
+        const modShieldLvlP2 = document.getElementById('mod-shield-lvl-p2');
+
+        const arsenalUiP1 = {
+            heatBarFill: heatBarFillP1,
+            modSpread: modSpreadP1,
+            modSpreadLvl: modSpreadLvlP1,
+            modLaser: modLaserP1,
+            modLaserLvl: modLaserLvlP1,
+            modMissile: modMissileP1,
+            modMissileLvl: modMissileLvlP1,
+            modRapid: modRapidP1,
+            modShield: modShieldP1,
+            modShieldLvl: modShieldLvlP1
+        };
+
+        const arsenalUiP2 = {
+            heatBarFill: heatBarFillP2,
+            modSpread: modSpreadP2,
+            modSpreadLvl: modSpreadLvlP2,
+            modLaser: modLaserP2,
+            modLaserLvl: modLaserLvlP2,
+            modMissile: modMissileP2,
+            modMissileLvl: modMissileLvlP2,
+            modRapid: modRapidP2,
+            modShield: modShieldP2,
+            modShieldLvl: modShieldLvlP2
+        };
 
         // Screens & Overlays
         const startScreen = document.getElementById('start-screen');
+        const menuPlayer = document.getElementById('menu-player');
+        const menuMode = document.getElementById('menu-mode');
         const gameOverScreen = document.getElementById('game-over-screen');
         const tacticalScreen = document.getElementById('tactical-screen');
         const jokeOverlay = document.getElementById('joke-overlay');
@@ -520,6 +710,10 @@
         const resumeBtn = document.getElementById('resumeBtn');
         const continueBtn = document.getElementById('continueBtn');
         const abortBtn = document.getElementById('abortBtn');
+        const playerOneBtn = document.getElementById('playerOneBtn');
+        const playerTwoBtn = document.getElementById('playerTwoBtn');
+        const playerOnlineBtn = document.getElementById('playerOnlineBtn');
+        const backToPlayerBtn = document.getElementById('backToPlayerBtn');
         const startNormalBtn = document.getElementById('startNormalBtn');
         const startBossBtn = document.getElementById('startBossBtn');
 
@@ -541,7 +735,8 @@
         // Game State
         let gameRunning = false;
         let paused = false;
-        let score = 0;
+        let scoreP1 = 0;
+        let scoreP2 = 0;
         let frames = 0;
         let level = 1;
         let nextLevelScore = 1000;
@@ -569,6 +764,28 @@
         // Message Timers
         let levelMsgTimeout;
         let powerUpMsgTimeout;
+
+        const PLAYER_MODE_KEY = 'neondefender_player_mode';
+        let playerCount = 1;
+        let playerModeType = 'single'; // 'single' | 'local' | 'online'
+
+        function teamScore() {
+            return playerCount === 2 ? (scoreP1 + scoreP2) : scoreP1;
+        }
+
+        function updateScoreUI() {
+            scoreP1El.innerText = "P1 SCORE: " + scoreP1;
+            if (playerCount === 2) {
+                scoreP2El.innerText = "P2 SCORE: " + scoreP2;
+            }
+        }
+
+        function addScore(points, owner) {
+            if (owner === player1) scoreP1 += points;
+            else if (owner === player2) scoreP2 += points;
+            else scoreP1 += points;
+            updateScoreUI();
+        }
 
         // --- GEMINI API INTEGRATION ---
 
@@ -684,7 +901,9 @@
             tacticalScreen.classList.remove('hidden');
             tacticalBtn.classList.add('hidden');
             
-            const prompt = `You are a helpful tactical spaceship AI. The player is paused. Current Status: Lives ${player.lives}, Level: ${level}, Score: ${score}. Give one short sentence of tactical advice or encouragement.`;
+            const prompt = playerCount === 2
+                ? `You are a helpful tactical spaceship AI. The pilots are paused. Current Status: P1 Lives ${player1.lives}, P2 Lives ${player2.lives}, Level ${level}, P1 Score ${scoreP1}, P2 Score ${scoreP2}. Give one short sentence of tactical advice or encouragement.`
+                : `You are a helpful tactical spaceship AI. The pilot is paused. Current Status: Lives ${player1.lives}, Level ${level}, Score ${scoreP1}. Give one short sentence of tactical advice or encouragement.`;
             callGemini(prompt, tacticalText);
         });
 
@@ -701,6 +920,7 @@
             paused = false;
             tacticalScreen.classList.add('hidden');
             startScreen.classList.remove('hidden');
+            showPlayerMenu();
             // Hide any other overlays
             jokeOverlay.classList.add('hidden');
             gameOverScreen.classList.add('hidden');
@@ -711,19 +931,21 @@
             jokeOverlay.classList.add('hidden');
             paused = false;
             
-            if (player.lives <= 0) {
+            if ((playerCount === 1 && player1.lives <= 0) || (playerCount === 2 && player1.lives <= 0 && player2.lives <= 0)) {
                 gameOver();
             } else {
-                // Respawn
-                player.x = canvas.width / 2 - player.width / 2;
-                player.y = canvas.height - 100;
-                player.invulnerable = 120; // 2 seconds safety
+                // Respawn last hit player if still alive
+                if (lastHitPlayer && lastHitPlayer.lives > 0) {
+                    lastHitPlayer.x = lastHitPlayer.spawnX;
+                    lastHitPlayer.y = lastHitPlayer.spawnY;
+                    lastHitPlayer.invulnerable = 120; // 2 seconds safety
+                }
                 animate(0);
             }
         });
 
         function triggerGameOverAnalysis() {
-            const prompt = `You are a sarcastic spaceship computer. The pilot just crashed their ship. Final Score: ${score}. Reached Level: ${level}. Give a one-sentence snarky performance review.`;
+            const prompt = `You are a sarcastic spaceship computer. The pilots just crashed their ships. Final Score P1: ${scoreP1}, P2: ${scoreP2}. Reached Level: ${level}. Give a one-sentence snarky performance review.`;
             callGemini(prompt, analysisText);
         }
 
@@ -735,22 +957,22 @@
             callGemini(prompt, jokeEl);
         }
 
-        function updateArsenalUI() {
+        function updateArsenalUI(player, ui) {
             if (!player) return;
 
             // Heat Bar
             const heatPct = Math.min(100, (player.heat / player.maxHeat) * 100);
-            heatBarFill.style.height = heatPct + '%';
+            ui.heatBarFill.style.height = heatPct + '%';
             
             if (player.hasRapidFire) {
-                heatBarFill.style.backgroundColor = '#0ff'; // Blue for infinite
+                ui.heatBarFill.style.backgroundColor = '#0ff'; // Blue for infinite
             } else if (player.overheated) {
-                heatBarFill.style.backgroundColor = '#f00'; // Red
+                ui.heatBarFill.style.backgroundColor = '#f00'; // Red
             } else {
                 if (heatPct > 75) {
-                    heatBarFill.style.backgroundColor = '#f80';
+                    ui.heatBarFill.style.backgroundColor = '#f80';
                 } else {
-                    heatBarFill.style.backgroundColor = '#0f0';
+                    ui.heatBarFill.style.backgroundColor = '#0f0';
                 }
             }
 
@@ -759,30 +981,30 @@
             const isLaser = player.weaponMode === 'laser';
 
             // Spread Icon
-            modSpread.className = 'module-icon'; // Reset
-            if (isSpread) modSpread.classList.add('module-active', 'weapon-active-spread');
-            modSpreadLvl.innerText = player.spreadLevel;
+            ui.modSpread.className = 'module-icon'; // Reset
+            if (isSpread) ui.modSpread.classList.add('module-active', 'weapon-active-spread');
+            ui.modSpreadLvl.innerText = player.spreadLevel;
 
             // Laser Icon
-            modLaser.className = 'module-icon'; // Reset
-            if (isLaser) modLaser.classList.add('module-active', 'weapon-active-laser');
-            modLaserLvl.innerText = player.laserLevel;
+            ui.modLaser.className = 'module-icon'; // Reset
+            if (isLaser) ui.modLaser.classList.add('module-active', 'weapon-active-laser');
+            ui.modLaserLvl.innerText = player.laserLevel;
 
             // Missile Icon
-            modMissile.classList.toggle('module-active', player.missileLevel > 0);
-            modMissile.style.borderColor = player.missileLevel > 0 ? '#f0f' : '#444';
-            modMissile.style.color = player.missileLevel > 0 ? '#f0f' : '#444';
-            modMissileLvl.innerText = player.missileLevel;
+            ui.modMissile.classList.toggle('module-active', player.missileLevel > 0);
+            ui.modMissile.style.borderColor = player.missileLevel > 0 ? '#f0f' : '#444';
+            ui.modMissile.style.color = player.missileLevel > 0 ? '#f0f' : '#444';
+            ui.modMissileLvl.innerText = player.missileLevel;
 
-            modRapid.classList.toggle('module-active', player.hasRapidFire);
-            modRapid.style.borderColor = player.hasRapidFire ? '#fa0' : '#444';
-            modRapid.style.color = player.hasRapidFire ? '#fa0' : '#444';
+            ui.modRapid.classList.toggle('module-active', player.hasRapidFire);
+            ui.modRapid.style.borderColor = player.hasRapidFire ? '#fa0' : '#444';
+            ui.modRapid.style.color = player.hasRapidFire ? '#fa0' : '#444';
 
             // Shield Icon
-            modShield.classList.toggle('module-active', player.shieldLevel > 0);
-            modShield.style.borderColor = player.shieldLevel > 0 ? '#fff' : '#444';
-            modShield.style.color = player.shieldLevel > 0 ? '#fff' : '#444';
-            modShieldLvl.innerText = player.shieldLevel;
+            ui.modShield.classList.toggle('module-active', player.shieldLevel > 0);
+            ui.modShield.style.borderColor = player.shieldLevel > 0 ? '#fff' : '#444';
+            ui.modShield.style.color = player.shieldLevel > 0 ? '#fff' : '#444';
+            ui.modShieldLvl.innerText = player.shieldLevel;
         }
 
         // --- GAME ENGINE ---
@@ -799,7 +1021,12 @@
             ArrowDown: false,
             ArrowLeft: false,
             ArrowRight: false,
-            Space: false
+            Enter: false,
+            Space: false,
+            KeyW: false,
+            KeyA: false,
+            KeyS: false,
+            KeyD: false
         };
 
         const pointer = {
@@ -809,6 +1036,9 @@
         };
 
         window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.code === 'Space' || e.code === 'Enter') {
+                e.preventDefault();
+            }
             // Modal Navigation (Space/Enter to continue)
             if (!jokeOverlay.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
                 continueBtn.click();
@@ -820,26 +1050,40 @@
             }
 
             if (e.code === 'Space') keys.Space = true;
+            if (e.code === 'Enter') keys.Enter = true;
             if (e.key === 'ArrowUp') keys.ArrowUp = true;
             if (e.key === 'ArrowDown') keys.ArrowDown = true;
             if (e.key === 'ArrowLeft') keys.ArrowLeft = true;
             if (e.key === 'ArrowRight') keys.ArrowRight = true;
+            if (e.code === 'KeyW') keys.KeyW = true;
+            if (e.code === 'KeyA') keys.KeyA = true;
+            if (e.code === 'KeyS') keys.KeyS = true;
+            if (e.code === 'KeyD') keys.KeyD = true;
             if (e.key === 't' || e.key === 'T') tacticalBtn.click();
         });
 
         window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.code === 'Space' || e.code === 'Enter') {
+                e.preventDefault();
+            }
             if (e.code === 'Space') keys.Space = false;
+            if (e.code === 'Enter') keys.Enter = false;
             if (e.key === 'ArrowUp') keys.ArrowUp = false;
             if (e.key === 'ArrowDown') keys.ArrowDown = false;
             if (e.key === 'ArrowLeft') keys.ArrowLeft = false;
             if (e.key === 'ArrowRight') keys.ArrowRight = false;
+            if (e.code === 'KeyW') keys.KeyW = false;
+            if (e.code === 'KeyA') keys.KeyA = false;
+            if (e.code === 'KeyS') keys.KeyS = false;
+            if (e.code === 'KeyD') keys.KeyD = false;
         });
 
         window.addEventListener('touchstart', (e) => {
             pointer.active = true;
             pointer.x = e.touches[0].clientX;
             pointer.y = e.touches[0].clientY;
-            keys.Space = true; 
+            keys.Enter = true;
+            keys.Space = true;
         }, {passive: false});
 
         window.addEventListener('touchmove', (e) => {
@@ -852,6 +1096,7 @@
 
         window.addEventListener('touchend', () => {
             pointer.active = false;
+            keys.Enter = false;
             keys.Space = false;
         });
 
@@ -871,13 +1116,17 @@
 
         // CLASSES
         class Player {
-            constructor() {
+            constructor(config) {
                 this.width = 40;
                 this.height = 50; 
-                this.x = canvas.width / 2 - this.width / 2;
-                this.y = canvas.height - 100;
+                this.x = config.spawnX;
+                this.y = config.spawnY;
+                this.spawnX = config.spawnX;
+                this.spawnY = config.spawnY;
                 this.speed = 7;
-                this.color = '#0ff';
+                this.color = config.color;
+                this.controls = config.controls;
+                this.usePointer = config.usePointer;
                 this.lives = 3;
                 this.lastShot = 0;
                 this.shootDelay = 15;
@@ -896,6 +1145,7 @@
                 this.rapidFireTimer = 0;
             }
             draw() {
+                if (this.lives <= 0) return;
                 if (this.exploding) return;
                 if (this.invulnerable > 0 && Math.floor(frames / 4) % 2 === 0) return;
                 ctx.fillStyle = this.color;
@@ -928,6 +1178,7 @@
                 ctx.shadowBlur = 0;
             }
             update() {
+                if (this.lives <= 0) return;
                 if (this.exploding) return;
                 if (this.hasRapidFire) {
                     this.rapidFireTimer--;
@@ -938,36 +1189,36 @@
                     this.heat = (this.overheatTimer / 300) * 100; 
                     if (this.overheatTimer <= 0) { this.overheated = false; this.heat = 0; }
                 } else if (!this.hasRapidFire) {
-                    if (!keys.Space) { this.heat = Math.max(0, this.heat - 0.5); }
+                    if (!keys[this.controls.shoot]) { this.heat = Math.max(0, this.heat - 0.5); }
                 }
                 if (this.invulnerable > 0) this.invulnerable--;
-                if (keys.ArrowLeft) this.x -= this.speed;
-                if (keys.ArrowRight) this.x += this.speed;
-                if (keys.ArrowUp && this.y > 0) this.y -= this.speed;
-                if (keys.ArrowDown && this.y + this.height < canvas.height) this.y += this.speed;
+                if (keys[this.controls.left]) this.x -= this.speed;
+                if (keys[this.controls.right]) this.x += this.speed;
+                if (keys[this.controls.up] && this.y > 0) this.y -= this.speed;
+                if (keys[this.controls.down] && this.y + this.height < canvas.height) this.y += this.speed;
                 if (this.x + this.width < 0) this.x = canvas.width; else if (this.x > canvas.width) this.x = -this.width;
-                if (pointer.active) {
+                if (this.usePointer && pointer.active) {
                     const targetX = pointer.x - this.width/2;
                     const targetY = pointer.y - 30; 
                     this.x += (targetX - this.x) * 0.2;
                     this.y += (targetY - this.y) * 0.2;
                 }
                 const currentShootDelay = this.hasRapidFire ? 5 : this.shootDelay;
-                if (keys.Space && (!this.overheated || this.hasRapidFire) && frames - this.lastShot > currentShootDelay) { this.shoot(); this.lastShot = frames; }
+                if (keys[this.controls.shoot] && (!this.overheated || this.hasRapidFire) && frames - this.lastShot > currentShootDelay) { this.shoot(); this.lastShot = frames; }
                 if (this.missileLevel > 0 && frames % 60 === 0 && (enemies.length > 0 || currentBoss)) {
                     let count = Math.max(1, this.missileLevel);
-                    for (let i = 0; i < count; i++) { setTimeout(() => { projectiles.push(new HomingMissile(this.x + this.width/2, this.y, -15 + (i * 10))); }, i * 100); }
+                    for (let i = 0; i < count; i++) { setTimeout(() => { projectiles.push(new HomingMissile(this.x + this.width/2, this.y, -15 + (i * 10), this)); }, i * 100); }
                 }
             }
-            shoot() {
-                if (!this.hasRapidFire) {
-                    this.heat += 6; 
-                    if (this.heat >= this.maxHeat) { this.heat = this.maxHeat; this.overheated = true; this.overheatTimer = 300; showPowerUpMsg("OVERHEATED!", "#f00"); }
-                } else { this.heat = 0; this.overheated = false; }
-                let type = this.weaponMode === 'laser' ? 'laser' : 'normal';
-                let cx = this.x + this.width / 2;
-                let cy = this.y;
-                const spawn = (ox, oy, angle) => projectiles.push(new Projectile(cx + ox, cy + oy, false, type, angle));
+        shoot() {
+            if (!this.hasRapidFire) {
+                this.heat += 6; 
+                if (this.heat >= this.maxHeat) { this.heat = this.maxHeat; this.overheated = true; this.overheatTimer = 300; showPowerUpMsg("OVERHEATED!", "#f00"); }
+            } else { this.heat = 0; this.overheated = false; }
+            let type = this.weaponMode === 'laser' ? 'laser' : 'normal';
+            let cx = this.x + this.width / 2;
+            let cy = this.y;
+            const spawn = (ox, oy, angle) => projectiles.push(new Projectile(cx + ox, cy + oy, false, type, angle, this));
                 if (type === 'laser') {
                     if (this.laserLevel === 0) spawn(0, 0, 0);
                     else if (this.laserLevel === 1) { spawn(-10, 0, 0); spawn(10, 0, 0); }
@@ -989,8 +1240,9 @@
         }
 
         class Projectile {
-            constructor(x, y, isEnemy, type = 'normal', angle = 0) {
+            constructor(x, y, isEnemy, type = 'normal', angle = 0, owner = null) {
                 this.x = x; this.y = y; this.isEnemy = isEnemy; this.type = type; this.angle = angle;
+                this.owner = owner;
                 this.radius = isEnemy ? 4 : 3; if (type === 'laser') this.radius = 4;
                 this.color = isEnemy ? '#f44' : '#ff0'; if (type === 'laser') this.color = '#0ff';
                 this.speed = isEnemy ? 6 : 10; if (type === 'laser') this.speed = 18;
@@ -1009,8 +1261,8 @@
         }
 
         class HomingMissile extends Projectile {
-            constructor(x, y, initialOffset = 0) {
-                super(x + initialOffset, y, false, 'missile', 0);
+            constructor(x, y, initialOffset = 0, owner = null) {
+                super(x + initialOffset, y, false, 'missile', 0, owner);
                 this.color = '#f0f'; this.speed = 5; this.target = null; this.radius = 5; this.turnSpeed = 0.08; this.life = 120;
             }
             draw() {
@@ -1019,7 +1271,7 @@
                 if (frames % 4 === 0) particles.push(new Particle(this.x, this.y + 5, '#aaa')); ctx.restore();
             }
             update() {
-                this.life--; if (this.life <= 0) { this.markedForDeletion = true; createBlast(this.x, this.y); createExplosion(this.x, this.y, '#aaa', 5); return; }
+                this.life--; if (this.life <= 0) { this.markedForDeletion = true; createBlast(this.x, this.y, this.owner); createExplosion(this.x, this.y, '#aaa', 5); return; }
                 if (!this.target || this.target.markedForDeletion) {
                     if (currentBoss) this.target = currentBoss;
                     else { let minDist = Infinity; let closest = null; enemies.forEach(e => { let d = Math.hypot(e.x - this.x, e.y - this.y); if (d < minDist) { minDist = d; closest = e; } }); this.target = closest; }
@@ -1125,19 +1377,88 @@
         }
 
         // Global Arrays
-        let player; let projectiles = []; let enemies = []; let particles = []; let stars = []; let powerUps = [];
+        let player1;
+        let player2;
+        let lastHitPlayer = null;
+        let projectiles = [];
+        let enemies = [];
+        let particles = [];
+        let stars = [];
+        let powerUps = [];
 
         function init(mode) {
             if (jokeOverlay) jokeOverlay.classList.add('hidden');
             levelUpMsg.style.opacity = "0"; clearTimeout(levelMsgTimeout);
-            gameMode = mode; player = new Player(); projectiles = []; enemies = []; particles = []; stars = []; powerUps = [];
-            score = 0; level = 1; nextLevelScore = 1000; frames = 0; difficultyMultiplier = 1; paused = false;
+            const baseY = canvas.height - 100;
+            const p1X = canvas.width / 2 - 90;
+            const p2X = canvas.width / 2 + 50;
+            const controlsP1 = playerCount === 2
+                ? { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', shoot: 'Enter' }
+                : { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', shoot: 'Space' };
+            const controlsP2 = { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', shoot: 'Space' };
+            gameMode = mode;
+            player1 = new Player({ spawnX: p1X, spawnY: baseY, color: '#0ff', controls: controlsP1, usePointer: true });
+            player2 = playerCount === 2 ? new Player({ spawnX: p2X, spawnY: baseY, color: '#fa0', controls: controlsP2, usePointer: false }) : null;
+            projectiles = []; enemies = []; particles = []; stars = []; powerUps = [];
+            lastHitPlayer = null;
+            scoreP1 = 0; scoreP2 = 0; level = 1; nextLevelScore = 1000; frames = 0; difficultyMultiplier = 1; paused = false;
             currentBoss = null; bossesDefeated = 0; framesSinceLastBoss = 0;
             for(let i=0; i<100; i++) stars.push(new Star());
-            scoreEl.innerText = "SCORE: " + score; levelEl.innerText = "LEVEL: " + level; livesEl.innerText = "LIVES: 3"; livesEl.style.color = '#fff';
+            updateScoreUI();
+            levelEl.innerText = "LEVEL: " + level;
+            livesP1El.innerText = "P1 LIVES: 3";
+            livesP2El.innerText = "P2 LIVES: 3";
+            livesP1El.style.color = '#fff';
+            livesP2El.style.color = '#fff';
+            scoreP2El.classList.toggle('hidden', playerCount !== 2);
+            livesP2El.classList.toggle('hidden', playerCount !== 2);
+            document.getElementById('arsenal-panel-p2').classList.toggle('hidden', playerCount !== 2);
             gameRunning = true; startScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden'); tacticalBtn.classList.remove('hidden');
             animate(0); // Pass dummy time
         }
+
+        function applyPlayerModeUI(type) {
+            playerOneBtn.classList.toggle('active', type === 'single');
+            playerTwoBtn.classList.toggle('active', type === 'local');
+        }
+
+        function setPlayerMode(type) {
+            playerModeType = type;
+            if (type === 'single') playerCount = 1;
+            if (type === 'local') playerCount = 2;
+            applyPlayerModeUI(type);
+            try { localStorage.setItem(PLAYER_MODE_KEY, type); } catch {}
+        }
+
+        function showPlayerMenu() {
+            menuPlayer.classList.remove('menu-hidden');
+            menuMode.classList.add('menu-hidden');
+        }
+
+        function showModeMenu() {
+            menuPlayer.classList.add('menu-hidden');
+            menuMode.classList.remove('menu-hidden');
+        }
+
+        playerOneBtn.addEventListener('click', () => { setPlayerMode('single'); showModeMenu(); });
+        playerTwoBtn.addEventListener('click', () => { setPlayerMode('local'); showModeMenu(); });
+
+        const savedMode = (() => {
+            try { return localStorage.getItem(PLAYER_MODE_KEY); } catch { return null; }
+        })();
+        if (savedMode === 'local' || savedMode === 'single') {
+            setPlayerMode(savedMode);
+        } else {
+            applyPlayerModeUI(playerModeType);
+        }
+
+        if (playerOnlineBtn) {
+            playerOnlineBtn.addEventListener('click', () => {
+                alert('Online co-op is coming soon!');
+            });
+        }
+
+        backToPlayerBtn.addEventListener('click', showPlayerMenu);
 
         startNormalBtn.addEventListener('click', () => init('normal'));
         startBossBtn.addEventListener('click', () => init('boss_rush'));
@@ -1163,7 +1484,7 @@
 
         function checkLevelUp() {
             if (gameMode === 'normal') {
-                if (score >= nextLevelScore) {
+                if (teamScore() >= nextLevelScore) {
                     level++; nextLevelScore += 1000 + (level * 500); difficultyMultiplier += 0.2; levelEl.innerText = "LEVEL: " + level;
                     clearTimeout(levelMsgTimeout); levelUpMsg.style.opacity = "1"; levelMsgTimeout = setTimeout(() => { levelUpMsg.style.opacity = "0"; }, 2000);
                     if (level % 5 === 0) initBoss();
@@ -1173,7 +1494,7 @@
 
         function createExplosion(x, y, color, count = 20) { for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color)); }
 
-        function createBlast(x, y) {
+        function createBlast(x, y, owner) {
             for (let i = 0; i < 20; i++) { const angle = (Math.PI * 2 / 20) * i; particles.push(new Particle(x, y, '#0ff')); particles[particles.length-1].velocity.x = Math.cos(angle) * 5; particles[particles.length-1].velocity.y = Math.sin(angle) * 5; }
             const blastRadius = 80; const damage = 1; 
             enemies.forEach((enemy) => {
@@ -1182,7 +1503,7 @@
                     enemy.health -= damage; createExplosion(enemy.x, enemy.y, '#0ff', 5);
                     if (enemy.health <= 0) {
                         createExplosion(enemy.x, enemy.y, enemy.color, 20); enemy.dropPowerUp();
-                        setTimeout(() => { const idx = enemies.indexOf(enemy); if (idx > -1) { enemies.splice(idx, 1); score += enemy.points; scoreEl.innerText = "SCORE: " + score; checkLevelUp(); } }, 0);
+                        setTimeout(() => { const idx = enemies.indexOf(enemy); if (idx > -1) { enemies.splice(idx, 1); addScore(enemy.points, owner); checkLevelUp(); } }, 0);
                     }
                 }
             });
@@ -1194,34 +1515,46 @@
                     if (currentBoss.hp <= 0) {
                          createExplosion(currentBoss.x + currentBoss.width/2, currentBoss.y + currentBoss.height/2, '#f00', 100);
                          for(let k=0; k<5; k++) powerUps.push(new PowerUp(currentBoss.x + Math.random()*100, currentBoss.y + Math.random()*50));
-                         currentBoss = null; bossesDefeated++; framesSinceLastBoss = 0; score += 5000; scoreEl.innerText = "SCORE: " + score;
+                         currentBoss = null; bossesDefeated++; framesSinceLastBoss = 0; addScore(5000, owner);
                          if(gameMode === 'boss_rush') difficultyMultiplier += 0.5;
                     }
                 }
             }
         }
 
-        function playerHit() {
-            if (player.invulnerable > 0) return;
-            if (player.shieldLevel > 0) { player.shieldLevel--; createExplosion(player.x + player.width/2, player.y + player.height/2, '#0ff', 30); player.invulnerable = 60; showPowerUpMsg("SHIELD -" + (player.shieldLevel+1), "#f00"); return; }
-            player.lives--; livesEl.innerText = "LIVES: " + player.lives; livesEl.style.color = '#f00';
-            createExplosion(player.x + player.width/2, player.y + player.height/2, '#f0f', 80);
+        function playerHit(p) {
+            if (!p || p.invulnerable > 0 || p.exploding || p.lives <= 0) return;
+            lastHitPlayer = p;
+            if (p.shieldLevel > 0) { p.shieldLevel--; createExplosion(p.x + p.width/2, p.y + p.height/2, '#0ff', 30); p.invulnerable = 60; showPowerUpMsg("SHIELD -" + (p.shieldLevel+1), "#f00"); return; }
+            p.lives--;
+            if (p === player1) { livesP1El.innerText = "P1 LIVES: " + p.lives; livesP1El.style.color = '#f00'; }
+            if (p === player2) { livesP2El.innerText = "P2 LIVES: " + p.lives; livesP2El.style.color = '#f00'; }
+            createExplosion(p.x + p.width/2, p.y + p.height/2, '#f0f', 80);
             enemies = []; projectiles = [];
-            player.spreadLevel = 0; player.laserLevel = 0; player.missileLevel = 0; player.weaponMode = 'spread'; player.hasRapidFire = false; player.heat = 0; player.overheated = false;
-            player.x = -1000; player.exploding = true; 
+            p.spreadLevel = 0; p.laserLevel = 0; p.missileLevel = 0; p.weaponMode = 'spread'; p.hasRapidFire = false; p.heat = 0; p.overheated = false;
+            p.x = -1000; p.exploding = true;
             setTimeout(() => {
-                player.exploding = false;
-                if (currentBoss && player.lives > 0) { player.x = canvas.width / 2 - player.width / 2; player.y = canvas.height - 100; player.invulnerable = 120; }
+                p.exploding = false;
+                if (p.lives <= 0) {
+                    if (playerCount === 1) { gameOver(); }
+                    else { triggerDeathComment(); }
+                    return;
+                }
+                if (currentBoss && p.lives > 0) { p.x = p.spawnX; p.y = p.spawnY; p.invulnerable = 120; }
                 else { triggerDeathComment(); }
             }, 1500);
         }
 
         function checkCollisions() {
-            if (player.exploding) return; 
+            const players = [player1, player2].filter(Boolean);
             projectiles.forEach((projectile, pIndex) => {
                 if (projectile.isEnemy) {
-                    const dist = Math.hypot(projectile.x - (player.x + player.width/2), projectile.y - (player.y + player.height/2));
-                    if (dist < 20) { playerHit(); setTimeout(() => projectiles.splice(pIndex, 1), 0); }
+                    let hitPlayer = false;
+                    players.forEach((p) => {
+                        if (hitPlayer || p.exploding || p.lives <= 0) return;
+                        const dist = Math.hypot(projectile.x - (p.x + p.width/2), projectile.y - (p.y + p.height/2));
+                        if (dist < 20) { playerHit(p); hitPlayer = true; setTimeout(() => projectiles.splice(pIndex, 1), 0); }
+                    });
                 } else {
                     let hit = false;
                     enemies.forEach((enemy, eIndex) => {
@@ -1230,52 +1563,67 @@
                         if (dist - hitRadius - projectile.radius < 1) {
                             hit = true; enemy.health--;
                             if (projectile.type === 'missile') createExplosion(projectile.x, projectile.y, '#f0f', 15); else createExplosion(projectile.x, projectile.y, '#ff0', 5);
-                            if (!projectile.piercing) { setTimeout(() => projectiles.splice(pIndex, 1), 0); if (projectile.type === 'missile') createBlast(projectile.x, projectile.y); } else { createExplosion(projectile.x, projectile.y, '#0ff', 5); }
-                            if (enemy.health <= 0) { createExplosion(enemy.x, enemy.y, enemy.color, 20); enemy.dropPowerUp(); setTimeout(() => enemies.splice(eIndex, 1), 0); score += enemy.points; scoreEl.innerText = "SCORE: " + score; checkLevelUp(); }
+                            if (!projectile.piercing) { setTimeout(() => projectiles.splice(pIndex, 1), 0); if (projectile.type === 'missile') createBlast(projectile.x, projectile.y, projectile.owner); } else { createExplosion(projectile.x, projectile.y, '#0ff', 5); }
+                            if (enemy.health <= 0) { createExplosion(enemy.x, enemy.y, enemy.color, 20); enemy.dropPowerUp(); setTimeout(() => enemies.splice(eIndex, 1), 0); addScore(enemy.points, projectile.owner); checkLevelUp(); }
                         }
                     });
                     if (!hit && currentBoss && currentBoss.state !== 'entering') {
                         if (projectile.x > currentBoss.x && projectile.x < currentBoss.x + currentBoss.width && projectile.y > currentBoss.y && projectile.y < currentBoss.y + currentBoss.height) {
                             hit = true; currentBoss.hp--; createExplosion(projectile.x, projectile.y, '#fff', 5);
-                            if (!projectile.piercing) { setTimeout(() => projectiles.splice(pIndex, 1), 0); if (projectile.type === 'missile') createBlast(projectile.x, projectile.y); }
+                            if (!projectile.piercing) { setTimeout(() => projectiles.splice(pIndex, 1), 0); if (projectile.type === 'missile') createBlast(projectile.x, projectile.y, projectile.owner); }
                             
                             // Fixed: Check if currentBoss exists before accessing properties to prevent crash on missile kill
                             if (currentBoss && currentBoss.hp <= 0) { 
                                 createExplosion(currentBoss.x + currentBoss.width/2, currentBoss.y + currentBoss.height/2, '#f00', 100); 
                                 for(let k=0; k<5; k++) powerUps.push(new PowerUp(currentBoss.x + Math.random()*100, currentBoss.y + Math.random()*50)); 
-                                currentBoss = null; bossesDefeated++; framesSinceLastBoss = 0; score += 5000; scoreEl.innerText = "SCORE: " + score; 
+                                currentBoss = null; bossesDefeated++; framesSinceLastBoss = 0; addScore(5000, projectile.owner); 
                                 if(gameMode === 'boss_rush') difficultyMultiplier += 0.5; 
                             }
                         }
                     }
                 }
             });
-            enemies.forEach((enemy, index) => { if (enemy.x > player.x && enemy.x < player.x + player.width && enemy.y > player.y && enemy.y < player.y + player.height) { playerHit(); createExplosion(enemy.x, enemy.y, '#f00', 30); enemies.splice(index, 1); } });
+            enemies.forEach((enemy, index) => {
+                players.forEach((p) => {
+                    if (p.exploding || p.lives <= 0) return;
+                    if (enemy.x > p.x && enemy.x < p.x + p.width && enemy.y > p.y && enemy.y < p.y + p.height) {
+                        playerHit(p); createExplosion(enemy.x, enemy.y, '#f00', 30); enemies.splice(index, 1);
+                    }
+                });
+            });
             
             // NEW: Boss Body Collision Check
             if (currentBoss && currentBoss.state !== 'entering') {
-                if (player.x < currentBoss.x + currentBoss.width &&
-                    player.x + player.width > currentBoss.x &&
-                    player.y < currentBoss.y + currentBoss.height &&
-                    player.y + player.height > currentBoss.y) {
-                    playerHit();
-                }
+                players.forEach((p) => {
+                    if (p.exploding || p.lives <= 0) return;
+                    if (p.x < currentBoss.x + currentBoss.width &&
+                        p.x + p.width > currentBoss.x &&
+                        p.y < currentBoss.y + currentBoss.height &&
+                        p.y + p.height > currentBoss.y) {
+                        playerHit(p);
+                    }
+                });
             }
 
             powerUps.forEach((pu, index) => {
-                const dist = Math.hypot(pu.x - (player.x + player.width/2), pu.y - (player.y + player.height/2));
-                if (dist < 30) {
-                    if (pu.type === 'S') { if (player.weaponMode !== 'spread') { player.weaponMode = 'spread'; showPowerUpMsg("SPREAD MODE", "#0ff"); } else { player.spreadLevel = Math.min(6, player.spreadLevel + 1); showPowerUpMsg("SPREAD UP!", "#0ff"); } }
-                    else if (pu.type === 'M') { player.missileLevel = Math.min(6, player.missileLevel + 1); showPowerUpMsg("MISSILE LVL " + player.missileLevel, "#f0f"); }
-                    else if (pu.type === 'L') { if (player.weaponMode !== 'laser') { player.weaponMode = 'laser'; showPowerUpMsg("LASER MODE", "#0f0"); } else { player.laserLevel = Math.min(6, player.laserLevel + 1); showPowerUpMsg("LASER UP!", "#0f0"); } }
-                    else if (pu.type === 'R') { player.hasRapidFire = true; player.rapidFireTimer = 300; player.overheated = false; player.heat = 0; showPowerUpMsg("RAPID FIRE (5s)", "#fa0"); }
-                    else if (pu.type === 'H') { player.shieldLevel = Math.min(3, player.shieldLevel + 1); showPowerUpMsg("SHIELD LVL " + player.shieldLevel, "#fff"); }
-                    powerUps.splice(index, 1);
-                }
+                let picked = false;
+                players.forEach((p) => {
+                    if (picked || p.exploding || p.lives <= 0) return;
+                    const dist = Math.hypot(pu.x - (p.x + p.width/2), pu.y - (p.y + p.height/2));
+                    if (dist < 30) {
+                        if (pu.type === 'S') { if (p.weaponMode !== 'spread') { p.weaponMode = 'spread'; showPowerUpMsg("SPREAD MODE", "#0ff"); } else { p.spreadLevel = Math.min(6, p.spreadLevel + 1); showPowerUpMsg("SPREAD UP!", "#0ff"); } }
+                        else if (pu.type === 'M') { p.missileLevel = Math.min(6, p.missileLevel + 1); showPowerUpMsg("MISSILE LVL " + p.missileLevel, "#f0f"); }
+                        else if (pu.type === 'L') { if (p.weaponMode !== 'laser') { p.weaponMode = 'laser'; showPowerUpMsg("LASER MODE", "#0f0"); } else { p.laserLevel = Math.min(6, p.laserLevel + 1); showPowerUpMsg("LASER UP!", "#0f0"); } }
+                        else if (pu.type === 'R') { p.hasRapidFire = true; p.rapidFireTimer = 300; p.overheated = false; p.heat = 0; showPowerUpMsg("RAPID FIRE (5s)", "#fa0"); }
+                        else if (pu.type === 'H') { p.shieldLevel = Math.min(3, p.shieldLevel + 1); showPowerUpMsg("SHIELD LVL " + p.shieldLevel, "#fff"); }
+                        powerUps.splice(index, 1);
+                        picked = true;
+                    }
+                });
             });
         }
 
-        function gameOver() { gameRunning = false; gameOverScreen.classList.remove('hidden'); tacticalBtn.classList.add('hidden'); finalScoreEl.innerText = "Score: " + score; triggerGameOverAnalysis(); }
+        function gameOver() { gameRunning = false; gameOverScreen.classList.remove('hidden'); tacticalBtn.classList.add('hidden'); finalScoreEl.innerText = `P1 Score: ${scoreP1} | P2 Score: ${scoreP2}`; triggerGameOverAnalysis(); }
 
         function animate(timestamp) {
             if (!gameRunning || paused) return;
@@ -1289,7 +1637,10 @@
 
                 ctx.fillStyle = 'rgba(5, 5, 5, 0.3)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
                 stars.forEach(star => { star.update(); star.draw(); });
-                player.update(); player.draw(); updateArsenalUI();
+                player1.update(); player1.draw(); updateArsenalUI(player1, arsenalUiP1);
+                if (player2) {
+                    player2.update(); player2.draw(); updateArsenalUI(player2, arsenalUiP2);
+                }
                 if (currentBoss) { currentBoss.update(); currentBoss.draw(); bossTimerEl.innerText = "BOSS: ACTIVE"; bossTimerEl.style.color = "#f00"; }
                 else { 
                     if (gameMode === 'normal') { framesSinceLastBoss++; let timeUntilBoss = Math.max(0, BOSS_TIME_LIMIT - framesSinceLastBoss); let seconds = Math.floor(timeUntilBoss / 60); let mins = Math.floor(seconds / 60); let secs = seconds % 60; bossTimerEl.innerText = `BOSS: ${mins}:${secs < 10 ? '0' : ''}${secs}`; bossTimerEl.style.color = "#fff"; if (framesSinceLastBoss > BOSS_TIME_LIMIT) { initBoss(); framesSinceLastBoss = 0; } }
@@ -1299,7 +1650,7 @@
                 projectiles.forEach((projectile, index) => { projectile.update(); projectile.draw(); if (projectile.markedForDeletion) projectiles.splice(index, 1); });
                 enemies.forEach((enemy, index) => { enemy.update(); enemy.draw(); if (enemy.markedForDeletion) enemies.splice(index, 1); });
                 particles.forEach((particle, index) => { particle.update(); particle.draw(); if (particle.markedForDeletion) particles.splice(index, 1); });
-                if (!player.exploding) spawnEnemies();
+                if (!player1.exploding || (player2 && !player2.exploding)) spawnEnemies();
                 checkCollisions();
                 frames++;
             }

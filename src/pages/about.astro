@@ -1,0 +1,83 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const explainer = `
+Ideas Kids Can is built by three young creators who are learning by doing. They are designers, coders, writers, testers, and storytellers, and they are proving that kids can build amazing things today while gaining skills for the future.`;
+---
+<Layout title="About Us at Kids Can Co.">
+    <h1 class="mb-10">Kids Can Co.</h1>
+    <p class="mb-10 text-lg">{explainer}</p>
+
+    <section class="mb-10">
+        <h2 class="mb-4 text-2xl font-semibold">Meet the Creators</h2>
+        <p class="mb-6">
+            Joel, Ben, and Mateo build everything together. Each of them wears many hats and brings ideas
+            to life through design, code, writing, testing, and storytelling, with guidance, supervision,
+            and review from their dad.
+        </p>
+        <div class="grid gap-6 sm:grid-cols-3">
+            <div class="rounded-lg border p-4">
+                <h3 class="mb-2 text-xl font-semibold">Joel, 13</h3>
+                <p class="text-sm">
+                    Creative leader who loves shaping the big ideas, building game flow, and testing new
+                    features until they feel fun and fair.
+                </p>
+            </div>
+            <div class="rounded-lg border p-4">
+                <h3 class="mb-2 text-xl font-semibold">Ben, 11</h3>
+                <p class="text-sm">
+                    Detail-focused builder who enjoys turning sketches into real screens, refining layouts,
+                    and improving how the games feel to play.
+                </p>
+            </div>
+            <div class="rounded-lg border p-4">
+                <h3 class="mb-2 text-xl font-semibold">Mateo, 9</h3>
+                <p class="text-sm">
+                    Story-driven creator who brings imagination to every project, from characters and worlds
+                    to the tests that make sure everything works.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-10">
+        <h2 class="mb-4 text-2xl font-semibold">Why We Built This</h2>
+        <p>
+            We want kids to have fun, safe games and to see that learning technology can be exciting.
+            Building this site helps us practice teamwork, problem-solving, and creativity.
+        </p>
+    </section>
+
+    <section class="mb-10">
+        <h2 class="mb-4 text-2xl font-semibold">What We Are Learning</h2>
+        <ul class="list-disc pl-6">
+            <li>Designing clean, colorful layouts that are easy to use</li>
+            <li>Writing stories and instructions that make games more fun</li>
+            <li>Testing and improving ideas based on feedback</li>
+            <li>Coding features that bring our ideas to life</li>
+            <li>Working as a team and communicating clearly</li>
+        </ul>
+    </section>
+
+    <section class="mb-10">
+        <h2 class="mb-4 text-2xl font-semibold">Fun Facts</h2>
+        <ul class="list-disc pl-6">
+            <li>We brainstorm new game ideas during family time</li>
+            <li>We take turns being the tester and the storyteller</li>
+            <li>Every game starts as a sketch before it becomes code</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2 class="mb-4 text-2xl font-semibold">How You Can Help</h2>
+        <p>
+            Play the games, share ideas, and let us know what you want to see next. Your feedback helps us
+            learn and build better games for everyone.
+        </p>
+    </section>
+
+    <p class="mt-12 text-sm text-gray-400">
+        Disclaimer: Coding, designing, and writing were done with the help of AI tools. All content reflects
+        the thoughts, actions, and design ideas of the boys.
+    </p>
+</Layout>
