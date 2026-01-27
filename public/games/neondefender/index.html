@@ -443,29 +443,6 @@
             margin-top: 20px;
         }
 
-        .mode-select-container.mode-buttons {
-            display: grid;
-            grid-auto-flow: column;
-            grid-auto-columns: 1fr;
-            align-items: stretch;
-            margin-bottom: 12px;
-        }
-
-        .mode-select-container.mode-buttons .menu-btn {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 54px;
-            margin: 0;
-        }
-
-        .menu-back {
-            display: inline-block;
-            margin-top: 4px;
-        }
-
         .hidden {
             display: none !important;
         }
@@ -604,11 +581,11 @@
             </div>
             <button id="genMissionBtn" class="menu-btn secondary-btn">Generate Mission</button>
             
-            <div class="mode-select-container mode-buttons">
+            <div class="mode-select-container">
                 <button id="startNormalBtn" class="menu-btn">Mission Mode</button>
-                <button id="startBossBtn" class="menu-btn danger-btn">Boss Rush</button>
+                <button id="startBossBtn" class="menu-btn danger-btn">Boss Rush Mode</button>
             </div>
-            <button id="backToPlayerBtn" class="menu-btn secondary-btn menu-back">Back</button>
+            <button id="backToPlayerBtn" class="menu-btn secondary-btn">Back</button>
             <p class="mobile-hint">Touch & Drag to Move/Shoot</p>
         </div>
     </div>
