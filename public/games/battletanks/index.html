@@ -1,10 +1,11 @@
 <!-- 
     BATTLE TANKS 3D
     ---------------------------------------------------
-    Version: 2.4.5 (Radar Layout)
+    Version: 2.4.6 (Mobile Performance Mode)
     Last Updated: 2026-01-28
     
     Changelog:
+    - v2.4.6: Mobile FPS cap, lower pixel ratio, fewer particles, radar throttling, bullet cap.
     - v2.4.5: Radar panel offset below toggle to prevent overlap.
     - v2.4.4: Mobile fire/bomb/oil buttons arranged as an inverted triangle.
     - v2.4.3: Mobile joystick + fire button, radar toggle, HUD size reduction, mobile shadows off.
@@ -422,7 +423,7 @@
             <br>
             <button class="menu-btn secondary-btn" onclick="showMultiplayerMenu()">Online PvP</button>
         </div>
-        <div id="version-tag">v2.4.5</div>
+        <div id="version-tag">v2.4.6</div>
 
         <div class="menu-box" id="menu-multi" style="display: none;">
             <h2>Online Lobby</h2>
@@ -627,7 +628,9 @@
         
         let radarCtx;
         let lastFrameTime = 0;
+        let frameSkipCounter = 0;
         const frameInterval = 1000 / SETTINGS.targetFPS;
+        function getFrameInterval() { return 1000 / (isMobileLayout ? 30 : SETTINGS.targetFPS); }
         
         const keys = { w: false, a: false, s: false, d: false, space: false, v: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false, enter: false, m: false, b: false, n: false };
         const mouse = new THREE.Vector2();
@@ -651,6 +654,7 @@
             if (renderer) {
                 renderer.shadowMap.enabled = !isMobileLayout;
                 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.setPixelRatio(isMobileLayout ? 1 : Math.min(window.devicePixelRatio, 2));
             }
         }
         if (mobileQuery.addEventListener) {
@@ -1163,8 +1167,18 @@
             if (!renderer) {
                 scene = new THREE.Scene(); 
                 const aspect = window.innerWidth / window.innerHeight; camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100); 
-                renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = !isMobileLayout; renderer.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(renderer.domElement);
-                window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }); 
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(isMobileLayout ? 1 : Math.min(window.devicePixelRatio, 2));
+                renderer.shadowMap.enabled = !isMobileLayout;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.body.appendChild(renderer.domElement);
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    renderer.setPixelRatio(isMobileLayout ? 1 : Math.min(window.devicePixelRatio, 2));
+                }); 
                 window.addEventListener('keydown', (e) => updateKey(e, true)); window.addEventListener('keyup', (e) => updateKey(e, false)); window.addEventListener('mousemove', onMouseMove); window.addEventListener('mousedown', tryShoot); window.addEventListener('touchstart', onTouch); window.addEventListener('touchmove', onTouch);
 
                 // Add mobile bomb button listener
@@ -1381,7 +1395,8 @@
                 ? localPlayers.filter(p => p !== source)
                 : (source === localPlayers[0] || allies.includes(source) ? enemies : [localPlayers[0], ...allies]);
             // Visual: red sprinkle stream
-            for (let i = 0; i < 8; i++) {
+            const sprinkleCount = isMobileLayout ? 3 : 8;
+            for (let i = 0; i < sprinkleCount; i++) {
                 const sprinkleGeo = new THREE.SphereGeometry(0.08 + Math.random() * 0.06, 8, 8);
                 const sprinkleMat = new THREE.MeshBasicMaterial({ color: 0xff3322 });
                 const sprinkle = new THREE.Mesh(sprinkleGeo, sprinkleMat);
@@ -1393,7 +1408,7 @@
                 const offset = dir.clone().multiplyScalar(1.2 + Math.random() * 2.5).add(spread);
                 sprinkle.position.copy(origin).add(offset);
                 scene.add(sprinkle);
-                setTimeout(() => scene.remove(sprinkle), 120);
+                setTimeout(() => scene.remove(sprinkle), isMobileLayout ? 80 : 120);
             }
             targets.forEach(t => {
                 const toTarget = t.position.clone().sub(origin);
@@ -1459,6 +1474,7 @@
                 if (gameMode === 'network' && sourceTank === localPlayers[0]) broadcastShoot(type);
                 return;
             }
+            if (isMobileLayout && bullets.length > 30) return;
             let bulletGeo, bulletMat;
             if (type === 'electric') { bulletGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3); bulletMat = new THREE.MeshBasicMaterial({ color: 0x00ffff }); } else if (type === 'missile') { bulletGeo = new THREE.ConeGeometry(0.2, 0.6, 8); bulletMat = new THREE.MeshBasicMaterial({ color: 0x9933ff }); } else { bulletGeo = new THREE.SphereGeometry(0.2, 8, 8); bulletMat = new THREE.MeshBasicMaterial({ color: 0xff3333 }); }
             const bullet = new THREE.Mesh(bulletGeo, bulletMat); const direction = new THREE.Vector3(); sourceTank.getWorldDirection(direction); 
@@ -1471,12 +1487,13 @@
         }
 
         function createMuzzleFlash(pos) {
+            if (isMobileLayout) return;
             const flashGeo = new THREE.SphereGeometry(0.4, 8, 8); const flashMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8 }); const flash = new THREE.Mesh(flashGeo, flashMat); flash.position.copy(pos); scene.add(flash);
             const interval = setInterval(() => { flash.scale.multiplyScalar(0.8); flash.material.opacity -= 0.1; if(flash.material.opacity <= 0) { scene.remove(flash); clearInterval(interval); } }, 30);
         }
 
         function createExplosion(pos) {
-            const particleCount = 8; const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3); const mat = new THREE.MeshBasicMaterial({ color: 0xff4400 });
+            const particleCount = isMobileLayout ? 3 : 8; const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3); const mat = new THREE.MeshBasicMaterial({ color: 0xff4400 });
             for (let i = 0; i < particleCount; i++) { const mesh = new THREE.Mesh(geo, mat); mesh.position.copy(pos); const vel = new THREE.Vector3((Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.5 + 0.5, (Math.random() - 0.5) * 0.5); particles.push({ mesh: mesh, velocity: vel, life: 1.0 }); scene.add(mesh); }
         }
 
@@ -1503,6 +1520,10 @@
         }
 
         function updateRadar() {
+            if (isMobileLayout) {
+                frameSkipCounter = (frameSkipCounter + 1) % 3;
+                if (frameSkipCounter !== 0) return;
+            }
             const size = 150; const range = SETTINGS.boundarySize * 1.2; const center = size / 2; const scale = size / (range * 2);
             radarCtx.clearRect(0, 0, size, size);
             radarCtx.fillStyle = '#666';
@@ -1519,8 +1540,9 @@
             if (localPlayers.length === 0) return;
             if (!lastFrameTime) lastFrameTime = currentTime;
             const deltaTime = currentTime - lastFrameTime;
-            if (deltaTime < frameInterval) return; 
-            lastFrameTime = currentTime - (deltaTime % frameInterval);
+            const interval = getFrameInterval();
+            if (deltaTime < interval) return; 
+            lastFrameTime = currentTime - (deltaTime % interval);
             if (isPaused || isGameOver) return;
 
             updateRadar();
@@ -1615,8 +1637,8 @@
                     if (index === 0) { 
                         // Player 1 Logic
                         if (isMobileLayout && joystickActive) {
-                            if (joystickVector.x !== 0) tank.rotation.y -= joystickVector.x * rotateSpeed * 1.5;
-                            moveSpeed = -joystickVector.y * SETTINGS.playerSpeed;
+                            if (joystickVector.x !== 0) tank.rotation.y -= joystickVector.x * rotateSpeed * 2.5;
+                            moveSpeed = -joystickVector.y * SETTINGS.playerSpeed * 1.4;
                         } else if (gameMode === 'single' && controlScheme === 'standard') {
                             // Singleplayer WASD Standard Mode
                             let mx=0, mz=0; 
