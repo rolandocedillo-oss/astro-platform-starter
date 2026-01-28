@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background with Rounded Corners -->
+  <rect width="512" height="512" rx="80" fill="#1a1a1a" />
+  
+  <!-- Subtle Grid Pattern -->
+  <defs>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#2a2a2a" stroke-width="4"/>
+    </pattern>
+  </defs>
+  <rect width="512" height="512" rx="80" fill="url(#grid)" />
+
+  <!-- Left Track -->
+  <rect x="130" y="120" width="60" height="272" rx="8" fill="#333333" stroke="#111" stroke-width="4"/>
+  <!-- Right Track -->
+  <rect x="322" y="120" width="60" height="272" rx="8" fill="#333333" stroke="#111" stroke-width="4"/>
+
+  <!-- Main Hull (Green) -->
+  <rect x="150" y="140" width="212" height="232" rx="12" fill="#4ade80" stroke="#2f8f5b" stroke-width="6"/>
+
+  <!-- Turret (Darker Green) -->
+  <rect x="196" y="220" width="120" height="100" rx="16" fill="#22c55e" stroke="#166534" stroke-width="5"/>
+
+  <!-- Barrel (Gun) -->
+  <rect x="236" y="90" width="40" height="150" rx="8" fill="#111111" stroke="#333" stroke-width="4"/>
+
+  <!-- Border Highlight -->
+  <rect x="10" y="10" width="492" height="492" rx="70" fill="none" stroke="#4ade80" stroke-width="16" opacity="0.8"/>
+</svg>
