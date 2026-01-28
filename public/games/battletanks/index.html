@@ -1,10 +1,13 @@
 <!-- 
     BATTLE TANKS 3D
     ---------------------------------------------------
-    Version: 2.4.2 (Online Damage Sync)
+    Version: 2.4.5 (Radar Layout)
     Last Updated: 2026-01-28
     
     Changelog:
+    - v2.4.5: Radar panel offset below toggle to prevent overlap.
+    - v2.4.4: Mobile fire/bomb/oil buttons arranged as an inverted triangle.
+    - v2.4.3: Mobile joystick + fire button, radar toggle, HUD size reduction, mobile shadows off.
     - v2.4.2: Online PvP damage now syncs via hit events between clients.
     - v2.4.1: Safe spawn logic prevents players/allies/enemies from spawning in walls or out of bounds.
     - v2.4: Deployable oil slicks, flame thrower powerup, electric chain + homing, missile duration to 20s.
@@ -183,10 +186,10 @@
         /* Mobile Bomb Button */
         #mobile-bomb-btn {
             position: absolute;
-            bottom: 120px;
-            right: 20px;
-            width: 70px;
-            height: 70px;
+            bottom: 140px;
+            right: 110px;
+            width: 62px;
+            height: 62px;
             background: rgba(200, 0, 0, 0.6);
             border: 2px solid #ff5555;
             border-radius: 50%;
@@ -198,13 +201,14 @@
             display: none;
             align-items: center;
             justify-content: center;
+            transition: opacity 0.2s ease;
         }
         #mobile-oil-btn {
             position: absolute;
-            bottom: 40px;
+            bottom: 140px;
             right: 20px;
-            width: 70px;
-            height: 70px;
+            width: 62px;
+            height: 62px;
             background: rgba(255, 136, 0, 0.6);
             border: 2px solid #ffb84d;
             border-radius: 50%;
@@ -216,20 +220,41 @@
             display: none;
             align-items: center;
             justify-content: center;
+            transition: opacity 0.2s ease;
+        }
+        #mobile-fire-btn {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 60, 60, 0.7);
+            border: 2px solid #ff8a8a;
+            border-radius: 50%;
+            color: white;
+            font-size: 26px;
+            z-index: 100;
+            pointer-events: auto;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s ease;
         }
         /* Show on small screens */
         @media (max-width: 1024px) {
-            #mobile-bomb-btn, #mobile-oil-btn { display: flex; }
+            #mobile-bomb-btn, #mobile-oil-btn, #mobile-fire-btn { display: flex; }
         }
 
         #radar-container {
             position: absolute;
-            top: 20px;
+            top: 60px;
             left: 20px;
             display: flex;
             flex-direction: column;
             gap: 5px;
             pointer-events: auto;
+            transition: transform 0.2s ease, opacity 0.2s ease;
         }
         #radar {
             background: rgba(0, 20, 0, 0.9);
@@ -239,6 +264,25 @@
             opacity: 0.9;
             width: 150px;
             height: 150px;
+        }
+        #radar-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #666;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 150;
+            pointer-events: auto;
+        }
+        .radar-hidden {
+            transform: translateX(-110%);
+            opacity: 0;
+            pointer-events: none;
         }
         #status-panel {
             background: rgba(0, 0, 0, 0.8);
@@ -324,6 +368,46 @@
             font-size: 12px;
             pointer-events: none;
         }
+
+        #joystick-base {
+            position: absolute;
+            bottom: 40px;
+            left: 20px;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.25);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        #joystick-stick {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+            border: 2px solid rgba(255,255,255,0.6);
+        }
+        @media (max-width: 1024px) {
+            #joystick-base { display: flex; }
+            #radar {
+                width: 110px;
+                height: 110px;
+            }
+            #status-panel {
+                font-size: 12px;
+                padding: 6px;
+            }
+            #bomb-container {
+                font-size: 12px;
+            }
+            #header h1 { font-size: 18px; }
+            #controls-hint { font-size: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -338,7 +422,7 @@
             <br>
             <button class="menu-btn secondary-btn" onclick="showMultiplayerMenu()">Online PvP</button>
         </div>
-        <div id="version-tag">v2.4.2</div>
+        <div id="version-tag">v2.4.5</div>
 
         <div class="menu-box" id="menu-multi" style="display: none;">
             <h2>Online Lobby</h2>
@@ -392,6 +476,7 @@
     </div>
 
     <div id="ui-layer" style="display:none;">
+        <button id="radar-toggle">Radar</button>
         <div id="radar-container">
             <canvas id="radar" width="150" height="150"></canvas>
             <div id="status-panel">
@@ -428,6 +513,10 @@
         <button id="mobile-bomb-btn">💣</button>
         <!-- Mobile Oil Button -->
         <button id="mobile-oil-btn">🛢️</button>
+        <!-- Mobile Fire Button -->
+        <button id="mobile-fire-btn">🔥</button>
+        <!-- Mobile Joystick -->
+        <div id="joystick-base"><div id="joystick-stick"></div></div>
     </div>
 
     <div id="game-over">
@@ -546,6 +635,29 @@
         const raycaster = new THREE.Raycaster();
         const targetPoint = new THREE.Vector3();
         const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const mobileQuery = window.matchMedia('(max-width: 1024px)');
+        let isMobileLayout = mobileQuery.matches;
+        let joystickActive = false;
+        let joystickVector = new THREE.Vector2(0, 0);
+        let joystickCenter = { x: 0, y: 0 };
+        let joystickId = null;
+        let radarVisible = false;
+
+        function updateMobileLayout() {
+            isMobileLayout = mobileQuery.matches;
+            const radarContainer = document.getElementById('radar-container');
+            if (radarContainer && isMobileLayout && !radarVisible) radarContainer.classList.add('radar-hidden');
+            if (radarContainer && (!isMobileLayout || radarVisible)) radarContainer.classList.remove('radar-hidden');
+            if (renderer) {
+                renderer.shadowMap.enabled = !isMobileLayout;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            }
+        }
+        if (mobileQuery.addEventListener) {
+            mobileQuery.addEventListener('change', updateMobileLayout);
+        } else if (mobileQuery.addListener) {
+            mobileQuery.addListener(updateMobileLayout);
+        }
 
         async function initFirebase() {
             if (!firebaseConfig.apiKey) {
@@ -1051,13 +1163,17 @@
             if (!renderer) {
                 scene = new THREE.Scene(); 
                 const aspect = window.innerWidth / window.innerHeight; camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100); 
-                renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(renderer.domElement);
+                renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = !isMobileLayout; renderer.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(renderer.domElement);
                 window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }); 
                 window.addEventListener('keydown', (e) => updateKey(e, true)); window.addEventListener('keyup', (e) => updateKey(e, false)); window.addEventListener('mousemove', onMouseMove); window.addEventListener('mousedown', tryShoot); window.addEventListener('touchstart', onTouch); window.addEventListener('touchmove', onTouch);
 
                 // Add mobile bomb button listener
                 const bombBtn = document.getElementById('mobile-bomb-btn');
                 const oilBtn = document.getElementById('mobile-oil-btn');
+                const fireBtn = document.getElementById('mobile-fire-btn');
+                const joystickBase = document.getElementById('joystick-base');
+                const joystickStick = document.getElementById('joystick-stick');
+                const radarToggle = document.getElementById('radar-toggle');
                 const dropBombHandler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1078,16 +1194,82 @@
                 };
                 oilBtn.addEventListener('touchstart', dropOilHandler);
                 oilBtn.addEventListener('click', dropOilHandler);
+
+                if (fireBtn) {
+                    const fireStart = (e) => { e.preventDefault(); keys.space = true; };
+                    const fireEnd = (e) => { e.preventDefault(); keys.space = false; };
+                    fireBtn.addEventListener('touchstart', fireStart, { passive: false });
+                    fireBtn.addEventListener('touchend', fireEnd, { passive: false });
+                    fireBtn.addEventListener('touchcancel', fireEnd, { passive: false });
+                }
+
+                if (radarToggle) {
+                    const toggleRadar = (e) => {
+                        if (e && e.preventDefault) e.preventDefault();
+                        const radarContainer = document.getElementById('radar-container');
+                        radarVisible = !radarVisible;
+                        if (radarContainer) radarContainer.classList.toggle('radar-hidden', !radarVisible);
+                    };
+                    radarToggle.addEventListener('click', toggleRadar);
+                    radarToggle.addEventListener('touchstart', toggleRadar, { passive: false });
+                }
+
+                if (joystickBase && joystickStick) {
+                    const radius = 45;
+                    const setStick = (x, y) => {
+                        joystickStick.style.transform = `translate(${x}px, ${y}px)`;
+                    };
+                    const updateFromTouch = (touch) => {
+                        const dx = touch.clientX - joystickCenter.x;
+                        const dy = touch.clientY - joystickCenter.y;
+                        const dist = Math.min(radius, Math.hypot(dx, dy));
+                        const angle = Math.atan2(dy, dx);
+                        const x = Math.cos(angle) * dist;
+                        const y = Math.sin(angle) * dist;
+                        joystickVector.set(x / radius, y / radius);
+                        setStick(x, y);
+                    };
+                    joystickBase.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        const t = e.changedTouches[0];
+                        joystickId = t.identifier;
+                        const rect = joystickBase.getBoundingClientRect();
+                        joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                        joystickActive = true;
+                        updateFromTouch(t);
+                    }, { passive: false });
+                    joystickBase.addEventListener('touchmove', (e) => {
+                        if (!joystickActive) return;
+                        const t = Array.from(e.changedTouches).find(touch => touch.identifier === joystickId);
+                        if (!t) return;
+                        updateFromTouch(t);
+                    }, { passive: false });
+                    joystickBase.addEventListener('touchend', (e) => {
+                        const t = Array.from(e.changedTouches).find(touch => touch.identifier === joystickId);
+                        if (!t) return;
+                        joystickActive = false;
+                        joystickVector.set(0, 0);
+                        setStick(0, 0);
+                        joystickId = null;
+                    }, { passive: false });
+                    joystickBase.addEventListener('touchcancel', () => {
+                        joystickActive = false;
+                        joystickVector.set(0, 0);
+                        setStick(0, 0);
+                        joystickId = null;
+                    }, { passive: false });
+                }
             } else {
                 scene.clear();
             }
             
+            updateMobileLayout();
             scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 20, 70);
             camera.position.set(0, 25, 20); camera.lookAt(0, 0, 0);
             
             const radarCanvas = document.getElementById('radar'); radarCtx = radarCanvas.getContext('2d');
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9); dirLight.position.set(20, 50, 10); dirLight.castShadow = true; dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048; dirLight.shadow.camera.left = -30; dirLight.shadow.camera.right = 30; dirLight.shadow.camera.top = 30; dirLight.shadow.camera.bottom = -30; scene.add(dirLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9); dirLight.position.set(20, 50, 10); dirLight.castShadow = !isMobileLayout; dirLight.shadow.mapSize.width = isMobileLayout ? 1024 : 2048; dirLight.shadow.mapSize.height = isMobileLayout ? 1024 : 2048; dirLight.shadow.camera.left = -30; dirLight.shadow.camera.right = 30; dirLight.shadow.camera.top = 30; dirLight.shadow.camera.bottom = -30; scene.add(dirLight);
             
             // NETWORK MAP SYNC
             let mapData = null;
@@ -1348,6 +1530,10 @@
             if (localPlayers[0]) {
                 document.getElementById('bomb-count-p1').innerText = localPlayers[0].userData.bombs;
                 document.getElementById('oil-count-p1').innerText = localPlayers[0].userData.oils;
+                const bombBtn = document.getElementById('mobile-bomb-btn');
+                const oilBtn = document.getElementById('mobile-oil-btn');
+                if (bombBtn) bombBtn.style.opacity = localPlayers[0].userData.bombs > 0 ? '1' : '0.35';
+                if (oilBtn) oilBtn.style.opacity = localPlayers[0].userData.oils > 0 ? '1' : '0.35';
             }
             if (localPlayers[1]) {
                 document.getElementById('bomb-count-p2').innerText = localPlayers[1].userData.bombs;
@@ -1428,7 +1614,10 @@
                     
                     if (index === 0) { 
                         // Player 1 Logic
-                        if (gameMode === 'single' && controlScheme === 'standard') {
+                        if (isMobileLayout && joystickActive) {
+                            if (joystickVector.x !== 0) tank.rotation.y -= joystickVector.x * rotateSpeed * 1.5;
+                            moveSpeed = -joystickVector.y * SETTINGS.playerSpeed;
+                        } else if (gameMode === 'single' && controlScheme === 'standard') {
                             // Singleplayer WASD Standard Mode
                             let mx=0, mz=0; 
                             if (keys.w) mz-=1; if (keys.s) mz+=1; if (keys.a) mx-=1; if (keys.d) mx+=1;
@@ -1675,6 +1864,7 @@
             }
         }
         function onTouch(e) {
+            if (isMobileLayout) return;
             e.preventDefault(); if (isPaused) return; const touch = e.touches[0]; mouse.x = (touch.clientX / window.innerWidth) * 2 - 1; mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera); raycaster.ray.intersectPlane(groundPlane, targetPoint);
             if (localPlayers[0]) {
