@@ -1,0 +1,15 @@
+---
+import fs from 'node:fs';
+
+const htmlPath = new URL('../../../public/games/battletanks/index.html', import.meta.url);
+const rawHtml = fs.readFileSync(htmlPath, 'utf-8');
+const config = {
+  firebaseApiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY || process.env.PUBLIC_FIREBASE_API_KEY || '',
+  env: import.meta.env.DEV ? 'dev' : 'prod'
+};
+const injectedHtml = rawHtml.replace(
+  /<script id="battletanks-config" type="application\/json">[\s\S]*?<\/script>/,
+  `<script id="battletanks-config" type="application/json">${JSON.stringify(config)}</script>`
+);
+---
+<Fragment set:html={injectedHtml} />
