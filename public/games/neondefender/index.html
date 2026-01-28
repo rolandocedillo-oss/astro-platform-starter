@@ -1,10 +1,14 @@
 <!--
     NEON DEFENDER
     ---------------------------------------------------
-    Version: 1.1.1 (Mobile UI Controls Refinement)
+    Version: 1.1.2 (Env Injection + Astro Wrapper)
     Last Updated: 2026-01-28
     
     Changelog:
+    - Injected env config via Astro wrapper for Gemini/Firebase keys.
+    - Added config script hook to load runtime keys safely.
+    - Routed Neon Defender through /games/neondefender for config injection.
+    - Improved mobile UI firebutton placement and size.
     - Forced single-player mode on mobile and hid 2-player option.
     - Moved pause button under lives and improved touch button layering.
     - Added dedicated mobile fire button and horizontal mobile arsenal HUD.
@@ -19,6 +23,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Space Defender AI</title>
+    <script id="neon-config" type="application/json">{}</script>
     <style>
         body {
             margin: 0;
@@ -530,6 +535,13 @@
                 bottom: 130px;
                 margin-left: 0;
                 z-index: 60;
+                width: 120px;
+                height: 44px;
+                padding: 0;
+                font-size: 14px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
             .boss-warning { font-size: 30px; }
             .mode-select-container { flex-direction: column; gap: 10px; }
@@ -791,7 +803,13 @@
         }
 
         // API Key (Runtime provided)
-        const apiKey = "AIzaSyDvcn13K2W83Zx-k7Aa962kS5j6W1cdbW0"; 
+        let envConfig = {};
+        const envConfigEl = document.getElementById('neon-config');
+        if (envConfigEl && envConfigEl.textContent) {
+            try { envConfig = JSON.parse(envConfigEl.textContent); } catch {}
+        }
+        const apiKey = envConfig.geminiApiKey || ""; 
+        const firebaseApiKey = envConfig.firebaseApiKey || "";
 
         // Game State
         let gameRunning = false;

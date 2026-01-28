@@ -1,0 +1,16 @@
+---
+import fs from 'node:fs';
+
+const htmlPath = new URL('../../../public/games/neondefender/index.html', import.meta.url);
+const rawHtml = fs.readFileSync(htmlPath, 'utf-8');
+const config = {
+  geminiApiKey: import.meta.env.PUBLIC_GEMINI_API_KEY || '',
+  firebaseApiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY || '',
+  env: import.meta.env.DEV ? 'dev' : 'prod'
+};
+const injectedHtml = rawHtml.replace(
+  /<script id="neon-config" type="application\/json">[\s\S]*?<\/script>/,
+  `<script id="neon-config" type="application/json">${JSON.stringify(config)}</script>`
+);
+---
+{Astro.raw(injectedHtml)}
