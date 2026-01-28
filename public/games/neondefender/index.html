@@ -1,3 +1,15 @@
+<!--
+    NEON DEFENDER
+    ---------------------------------------------------
+    Version: 1.1.0 (Mobile Controls Update)
+    Last Updated: 2026-01-28
+    
+    Changelog:
+    - Added mobile fire button to prevent accidental overheat while dragging.
+    - Reworked mobile arsenal UI to a horizontal bottom layout.
+    - Improved touch handling for movement without auto-shooting.
+    ---------------------------------------------------
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,14 +154,15 @@
             position: relative;
         }
 
-        #heat-bar-fill {
+        #heat-bar-fill-p1,
+        #heat-bar-fill-p2 {
             width: 100%;
             height: 0%;
             background: #0f0;
             position: absolute;
             bottom: 0;
             left: 0;
-            transition: height 0.1s linear, background-color 0.2s;
+            transition: height 0.1s linear, width 0.1s linear, background-color 0.2s;
         }
 
         .modules-grid {
@@ -247,6 +260,19 @@
             display: flex;
             justify-content: center;
             padding: 20px;
+        }
+
+        #fireBtn {
+            background: #ff3b3b;
+            color: #fff;
+            border-color: #ff7b7b;
+            margin-left: 10px;
+            display: none;
+        }
+
+        #fireBtn:hover {
+            background: #ff5b5b;
+            box-shadow: 0 0 15px #ff5b5b;
         }
 
         #game-over-screen, #tactical-screen, #joke-overlay {
@@ -466,8 +492,34 @@
             h1 { font-size: 28px; }
             #game-over-screen, #joke-overlay { width: 85%; padding: 20px; }
             .menu-box { padding: 24px; }
-            #arsenal-panel-p1 { bottom: 20%; right: 10px; }
-            #arsenal-panel-p2 { bottom: 20%; left: 10px; }
+            #arsenal-panel-p1,
+            #arsenal-panel-p2 {
+                left: 10px;
+                right: 10px;
+                width: auto;
+                padding: 8px 10px;
+            }
+            #arsenal-panel-p1 { bottom: 10px; }
+            #arsenal-panel-p2 { bottom: 70px; }
+            .arsenal-player { flex-direction: row; }
+            .modules-grid { flex-direction: row; gap: 6px; }
+            .module-icon { width: 30px; height: 30px; font-size: 14px; }
+            .heat-container { height: 12px; width: 120px; flex-direction: row; }
+            .heat-bar-bg { width: 100%; height: 10px; }
+            .heat-label {
+                writing-mode: horizontal-tb;
+                transform: none;
+                margin-top: 0;
+                margin-left: 6px;
+            }
+            #heat-bar-fill-p1,
+            #heat-bar-fill-p2 {
+                height: 100%;
+                width: 0%;
+                top: 0;
+                bottom: auto;
+            }
+            #fireBtn { display: inline-block; }
             .boss-warning { font-size: 30px; }
             .mode-select-container { flex-direction: column; gap: 10px; }
         }
@@ -543,6 +595,7 @@
         </div>
         <div class="hud-bottom">
             <button id="tacticalBtn" class="sparkle-btn hidden" style="padding: 6px 12px; font-size: 12px;">Pause</button>
+            <button id="fireBtn" class="sparkle-btn" style="padding: 6px 16px; font-size: 12px;">Fire</button>
         </div>
     </div>
 
@@ -684,6 +737,7 @@
         const restartBtn = document.getElementById('restartBtn');
         const genMissionBtn = document.getElementById('genMissionBtn');
         const tacticalBtn = document.getElementById('tacticalBtn');
+        const fireBtn = document.getElementById('fireBtn');
         const resumeBtn = document.getElementById('resumeBtn');
         const continueBtn = document.getElementById('continueBtn');
         const abortBtn = document.getElementById('abortBtn');
@@ -705,6 +759,16 @@
         const modSpdEl = document.getElementById('mod-spd');
         const modHpEl = document.getElementById('mod-hp');
         const modSpawnEl = document.getElementById('mod-spawn');
+
+        const mobileQuery = window.matchMedia('(max-width: 768px)');
+        let isMobileLayout = mobileQuery.matches;
+
+        function updateMobileUi() {
+            isMobileLayout = mobileQuery.matches;
+            if (fireBtn) {
+                fireBtn.style.display = isMobileLayout && gameRunning ? 'inline-block' : 'none';
+            }
+        }
 
         // API Key (Runtime provided)
         const apiKey = "AIzaSyDvcn13K2W83Zx-k7Aa962kS5j6W1cdbW0"; 
@@ -939,7 +1003,13 @@
 
             // Heat Bar
             const heatPct = Math.min(100, (player.heat / player.maxHeat) * 100);
-            ui.heatBarFill.style.height = heatPct + '%';
+            if (isMobileLayout) {
+                ui.heatBarFill.style.width = heatPct + '%';
+                ui.heatBarFill.style.height = '100%';
+            } else {
+                ui.heatBarFill.style.height = heatPct + '%';
+                ui.heatBarFill.style.width = '100%';
+            }
             
             if (player.hasRapidFire) {
                 ui.heatBarFill.style.backgroundColor = '#0ff'; // Blue for infinite
@@ -989,9 +1059,15 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            updateMobileUi();
         }
         window.addEventListener('resize', resize);
         resize();
+        if (mobileQuery.addEventListener) {
+            mobileQuery.addEventListener('change', updateMobileUi);
+        } else if (mobileQuery.addListener) {
+            mobileQuery.addListener(updateMobileUi);
+        }
 
         const keys = {
             ArrowUp: false,
@@ -1005,6 +1081,14 @@
             KeyS: false,
             KeyD: false
         };
+
+        function setFireState(state) {
+            if (playerCount === 2) {
+                keys.Enter = state;
+            } else {
+                keys.Space = state;
+            }
+        }
 
         const pointer = {
             x: null,
@@ -1056,14 +1140,14 @@
         });
 
         window.addEventListener('touchstart', (e) => {
+            if (e.target && e.target.closest && e.target.closest('#fireBtn')) return;
             pointer.active = true;
             pointer.x = e.touches[0].clientX;
             pointer.y = e.touches[0].clientY;
-            keys.Enter = true;
-            keys.Space = true;
         }, {passive: false});
 
         window.addEventListener('touchmove', (e) => {
+            if (e.target && e.target.closest && e.target.closest('#fireBtn')) return;
             e.preventDefault(); 
             if (pointer.active) {
                 pointer.x = e.touches[0].clientX;
@@ -1073,9 +1157,31 @@
 
         window.addEventListener('touchend', () => {
             pointer.active = false;
-            keys.Enter = false;
-            keys.Space = false;
         });
+
+        if (fireBtn) {
+            fireBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setFireState(true);
+            }, {passive: false});
+            fireBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setFireState(false);
+            }, {passive: false});
+            fireBtn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                setFireState(true);
+            });
+            fireBtn.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                setFireState(false);
+            });
+            fireBtn.addEventListener('mouseleave', () => {
+                setFireState(false);
+            });
+        }
 
         // Fixed: Restored missing function to prevent ReferenceError
         function showPowerUpMsg(text, color) {
@@ -1391,6 +1497,7 @@
             livesP2El.classList.toggle('hidden', playerCount !== 2);
             document.getElementById('arsenal-panel-p2').classList.toggle('hidden', playerCount !== 2);
             gameRunning = true; startScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden'); tacticalBtn.classList.remove('hidden');
+            updateMobileUi();
             animate(0); // Pass dummy time
         }
 
@@ -1600,7 +1707,14 @@
             });
         }
 
-        function gameOver() { gameRunning = false; gameOverScreen.classList.remove('hidden'); tacticalBtn.classList.add('hidden'); finalScoreEl.innerText = `P1 Score: ${scoreP1} | P2 Score: ${scoreP2}`; triggerGameOverAnalysis(); }
+        function gameOver() {
+            gameRunning = false;
+            gameOverScreen.classList.remove('hidden');
+            tacticalBtn.classList.add('hidden');
+            updateMobileUi();
+            finalScoreEl.innerText = `P1 Score: ${scoreP1} | P2 Score: ${scoreP2}`;
+            triggerGameOverAnalysis();
+        }
 
         function animate(timestamp) {
             if (!gameRunning || paused) return;
