@@ -1,10 +1,11 @@
 <!-- 
     BATTLE TANKS 3D
     ---------------------------------------------------
-    Version: 2.4.1 (Spawn Safety)
+    Version: 2.4.2 (Online Damage Sync)
     Last Updated: 2026-01-28
     
     Changelog:
+    - v2.4.2: Online PvP damage now syncs via hit events between clients.
     - v2.4.1: Safe spawn logic prevents players/allies/enemies from spawning in walls or out of bounds.
     - v2.4: Deployable oil slicks, flame thrower powerup, electric chain + homing, missile duration to 20s.
     - v2.3: Public lobby list with region filter, quick join, refresh, host handoff, and stale cleanup.
@@ -337,7 +338,7 @@
             <br>
             <button class="menu-btn secondary-btn" onclick="showMultiplayerMenu()">Online PvP</button>
         </div>
-        <div id="version-tag">v2.4.1</div>
+        <div id="version-tag">v2.4.2</div>
 
         <div class="menu-box" id="menu-multi" style="display: none;">
             <h2>Online Lobby</h2>
@@ -950,6 +951,7 @@
                     if (change.type === "added") { 
                         const enemyTank = createTank(0xff00ff); 
                         enemyTank.position.set(data.x, 0, data.z); 
+                        enemyTank.userData.userId = data.userId;
                         // Init interpolation targets
                         enemyTank.userData.targetX = data.x;
                         enemyTank.userData.targetZ = data.z;
@@ -965,6 +967,7 @@
                             remotePlayers[pid].userData.targetX = data.x;
                             remotePlayers[pid].userData.targetZ = data.z;
                             remotePlayers[pid].userData.targetRot = data.rot;
+                            remotePlayers[pid].userData.userId = data.userId;
                             
                             if (data.hp > 0 && !remotePlayers[pid].parent) {
                                 scene.add(remotePlayers[pid]);
@@ -997,6 +1000,10 @@
                             remoteLastShot[data.from] = now;
                             shoot(remotePlayers[data.from], data.weaponType || 'normal');
                         }
+                        if (data.type === 'hit' && data.to === user.uid && localPlayers[0]) {
+                            takeDamage(localPlayers[0], data.amount || 10);
+                            createExplosion(localPlayers[0].position);
+                        }
                     }
                 });
             });
@@ -1023,6 +1030,10 @@
         }
 
         async function broadcastShoot(type) { if (gameMode !== 'network') return; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bt_actions'), { gameId: gameId, type: 'shoot', from: user.uid, weaponType: type, ts: Date.now() }); }
+        async function broadcastHit(toUserId, amount) {
+            if (gameMode !== 'network' || !toUserId) return;
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bt_actions'), { gameId: gameId, type: 'hit', from: user.uid, to: toUserId, amount: amount, ts: Date.now() });
+        }
 
         function getFireRateFor(tank) {
             return tank.userData.weapon === 'flame' ? SETTINGS.flameFireRate : SETTINGS.fireRate;
@@ -1519,6 +1530,11 @@
                     const t = targets[j];
                     if (b.position.distanceTo(t.position) < 1.5) {
                         scene.remove(b); bullets.splice(i, 1); hit = true;
+                        const ownerIsLocal = b.userData.owner === localPlayers[0];
+                        if (gameMode === 'network' && t === localPlayers[0] && !ownerIsLocal) {
+                            createExplosion(t.position);
+                            break;
+                        }
                         if (b.userData.type === 'electric') { chainLightning(b.userData.owner, t); } else if (b.userData.type === 'missile') explode(b.position, 6, 30, b.userData.owner); else { takeDamageOrDestroy(t, 10); createExplosion(t.position); }
                         break;
                     }
@@ -1575,7 +1591,10 @@
                     createExplosion(tank.position); scene.remove(tank);
                     if (enemies.includes(tank)) { enemies.splice(enemies.indexOf(tank), 1); score += 100; document.getElementById('score-board').innerText = score; }
                     if (allies.includes(tank)) allies.splice(allies.indexOf(tank), 1);
-                } else { createExplosion(tank.position); }
+                } else {
+                    const targetId = tank.userData?.userId;
+                    broadcastHit(targetId, amount);
+                }
             }
         }
 
