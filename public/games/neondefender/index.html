@@ -1,10 +1,13 @@
 <!--
     NEON DEFENDER
     ---------------------------------------------------
-    Version: 1.1.0 (Mobile Controls Update)
+    Version: 1.1.1 (Mobile UI Controls Refinement)
     Last Updated: 2026-01-28
     
     Changelog:
+    - Forced single-player mode on mobile and hid 2-player option.
+    - Moved pause button under lives and improved touch button layering.
+    - Added dedicated mobile fire button and horizontal mobile arsenal HUD.
     - Added mobile fire button to prevent accidental overheat while dragging.
     - Reworked mobile arsenal UI to a horizontal bottom layout.
     - Improved touch handling for movement without auto-shooting.
@@ -50,6 +53,7 @@
             font-weight: bold;
             text-shadow: 0 0 5px #0ff;
             align-items: flex-start;
+            pointer-events: auto;
         }
 
         .hud-left {
@@ -255,11 +259,9 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        .hud-bottom {
-            pointer-events: auto;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
+        .pause-btn {
+            margin-top: 8px;
+            align-self: flex-end;
         }
 
         #fireBtn {
@@ -268,6 +270,8 @@
             border-color: #ff7b7b;
             margin-left: 10px;
             display: none;
+            pointer-events: auto;
+            z-index: 60;
         }
 
         #fireBtn:hover {
@@ -519,7 +523,14 @@
                 top: 0;
                 bottom: auto;
             }
-            #fireBtn { display: inline-block; }
+            #fireBtn {
+                display: inline-block;
+                position: absolute;
+                left: 10px;
+                bottom: 130px;
+                margin-left: 0;
+                z-index: 60;
+            }
             .boss-warning { font-size: 30px; }
             .mode-select-container { flex-direction: column; gap: 10px; }
         }
@@ -540,6 +551,7 @@
                 <div id="bossTimer">BOSS: 2:00</div>
                 <div id="livesDisplayP1">P1 LIVES: 3</div>
                 <div id="livesDisplayP2">P2 LIVES: 3</div>
+                <button id="tacticalBtn" class="sparkle-btn pause-btn hidden" style="padding: 6px 12px; font-size: 12px;">Pause</button>
             </div>
         </div>
         
@@ -593,10 +605,7 @@
             <div id="levelUpMsg" class="level-up-msg">LEVEL UP!</div>
             <div id="powerUpMsg" class="powerup-msg">POWER UP!</div>
         </div>
-        <div class="hud-bottom">
-            <button id="tacticalBtn" class="sparkle-btn hidden" style="padding: 6px 12px; font-size: 12px;">Pause</button>
-            <button id="fireBtn" class="sparkle-btn" style="padding: 6px 16px; font-size: 12px;">Fire</button>
-        </div>
+        <button id="fireBtn" class="sparkle-btn" style="padding: 6px 16px; font-size: 12px;">Fire</button>
     </div>
 
     <!-- Modals -->
@@ -767,6 +776,17 @@
             isMobileLayout = mobileQuery.matches;
             if (fireBtn) {
                 fireBtn.style.display = isMobileLayout && gameRunning ? 'inline-block' : 'none';
+            }
+            if (playerTwoBtn) {
+                playerTwoBtn.classList.toggle('hidden', isMobileLayout);
+                playerTwoBtn.disabled = isMobileLayout;
+            }
+            if (playerOnlineBtn) {
+                playerOnlineBtn.classList.toggle('hidden', isMobileLayout);
+            }
+            if (isMobileLayout && playerModeType !== 'single') {
+                setPlayerMode('single');
+                showPlayerMenu();
             }
         }
 
