@@ -1,0 +1,323 @@
+---
+---
+<!--
+  Block Battle - Arena Shell
+  Version: 0.3.0
+  Last Updated: 2026-01-28
+  Changelog:
+  - 0.3.0: Removed post-wave modal in favor of arena pad.
+  - 0.2.9: Added Rogue Mode toggle to the armory menu.
+  - 0.2.8: Highlighted active weapon, added swap hint, and back-to-primary control.
+  - 0.2.7: Split HUD into panels and added primary/secondary weapon armory flow.
+  - 0.2.6: Added powerup status and timer HUD rows.
+  - 0.2.5: Added pause button to the HUD.
+  - 0.2.4: Redesigned armory to use weapon tabs with a detail panel.
+  - 0.2.3: Updated armory layout with weapon cards, stat summaries, and styling polish.
+  - 0.2.1: Added powerup legend, active powerup HUD, and wave overlay UI.
+  - 0.2.0: Added menu/HUD structure and training layout comments.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Block Battle Arena</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --panel: rgba(0, 0, 0, 0.65);
+        --accent: #33ffcc;
+        --danger: #ff4d4d;
+      }
+      body { margin: 0; overflow: hidden; background: #111; }
+      #game-container { width: 100vw; height: 100vh; }
+      .hud-panel {
+        position: absolute;
+        color: white;
+        font-family: monospace;
+        background: var(--panel);
+        padding: 12px 14px;
+        pointer-events: none;
+        user-select: none;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+      }
+      #hud-left {
+        top: 20px;
+        left: 20px;
+        min-width: 180px;
+      }
+      #hud-right {
+        top: 70px;
+        right: 20px;
+        min-width: 220px;
+      }
+      #hud-bottom {
+        bottom: 20px;
+        left: 20px;
+        min-width: 240px;
+      }
+      #pause-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.6);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: #fff;
+        font-family: monospace;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        z-index: 9;
+      }
+      #message-banner {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        font-family: monospace;
+        padding: 10px 16px;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 8px;
+        z-index: 9;
+        display: none;
+        pointer-events: none;
+        text-align: center;
+      }
+      #menu {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        font-family: monospace;
+        z-index: 10;
+      }
+      #wave-complete {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.75);
+        color: white;
+        font-family: monospace;
+        z-index: 11;
+      }
+      #game-over {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        font-family: monospace;
+        z-index: 12;
+      }
+      .menu-card {
+        background: rgba(15,15,20,0.95);
+        border: 1px solid rgba(255,255,255,0.2);
+        padding: 24px;
+        border-radius: 12px;
+        width: min(520px, 90vw);
+      }
+      .menu-card h2 { margin-top: 0; }
+      .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .weapon-tabs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .weapon-tab {
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: rgba(20,20,30,0.85);
+        cursor: pointer;
+        text-align: center;
+        font-size: 13px;
+      }
+      .weapon-tab.selected {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px rgba(51,255,204,0.4);
+        color: var(--accent);
+      }
+      .weapon-detail {
+        margin-top: 14px;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: rgba(12,12,18,0.85);
+      }
+      .weapon-detail h3 {
+        margin: 0 0 6px 0;
+        font-size: 16px;
+      }
+      .weapon-detail .meta {
+        font-size: 12px;
+        color: rgba(255,255,255,0.75);
+        margin-bottom: 8px;
+      }
+      .weapon-stats {
+        font-size: 12px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 6px 12px;
+      }
+      .weapon-stats span {
+        display: block;
+      }
+      .weapon-tag {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        font-size: 11px;
+        border: 1px solid rgba(255,255,255,0.25);
+        color: rgba(255,255,255,0.8);
+      }
+      .weapon-tag.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      #swap-hint {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        font-family: monospace;
+        font-size: 12px;
+        color: rgba(255,255,255,0.7);
+        background: rgba(0,0,0,0.4);
+        padding: 6px 8px;
+        border-radius: 6px;
+        pointer-events: none;
+      }
+      .menu-btn {
+        background: #1d1f2a;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .menu-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .primary-btn {
+        margin-top: 16px;
+        width: 100%;
+        background: var(--accent);
+        color: #081014;
+        font-weight: bold;
+        border: none;
+        padding: 10px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .health-bar {
+        width: 200px;
+        height: 14px;
+        border: 2px solid white;
+        margin-top: 8px;
+        background: rgba(255,255,255,0.1);
+      }
+      .health-fill {
+        width: 100%;
+        height: 100%;
+        background: var(--danger);
+        transition: width 0.2s;
+      }
+      .hud-row { margin-top: 6px; font-size: 13px; }
+      #enemy-health-fill { background: #ff7a7a; }
+    </style>
+  </head>
+  <body>
+    <!-- Start menu: weapon selection before training -->
+    <div id="menu">
+      <div class="menu-card">
+        <h2>BLOCK BATTLE: TRAINING</h2>
+        <p id="armory-step">Select your primary weapon.</p>
+        <button class="menu-btn" id="back-primary-btn" style="margin-top: 8px; display: none;">Back to Primary</button>
+        <div id="weapon-tabs" class="weapon-tabs"></div>
+        <div id="weapon-detail" class="weapon-detail"></div>
+        <label class="hud-row" style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+          <input type="checkbox" id="rogue-toggle" />
+          Rogue Mode (random rogue bot)
+        </label>
+        <div class="hud-row" style="margin-top: 16px;">Powerups (legend)</div>
+        <div class="hud-row">Frost Bite: freeze enemy</div>
+        <div class="hud-row">FlameKiss: burn damage</div>
+        <div class="hud-row">Tornado: instant KO</div>
+        <div class="hud-row">Oil Slick: slip/slow</div>
+        <div class="hud-row">Homing Missiles: splash damage</div>
+        <div class="hud-row">Shrink/Grow: size change</div>
+        <div class="hud-row">Fart: knockdown</div>
+        <button class="primary-btn" id="start-btn">Next</button>
+      </div>
+    </div>
+
+    <!-- End-of-wave screen removed in favor of arena pad -->
+
+    <!-- Game over screen -->
+    <div id="game-over" style="display:none;">
+      <div class="menu-card">
+        <h2>Game Over</h2>
+        <p>Your robot has been destroyed.</p>
+        <div class="menu-grid">
+          <button class="menu-btn" id="retry-btn">Retry Wave</button>
+          <button class="menu-btn" id="armory-btn-lose">Return to Armory</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD panels -->
+    <div id="hud-left" class="hud-panel">
+      <h2>BLOCK BATTLE</h2>
+      <p>WASD to Move | Click/Space to Attack</p>
+      <div class="hud-row">Wave: <span id="wave-number">1</span></div>
+      <div class="hud-row">Points: <span id="points">0</span></div>
+    </div>
+
+    <div id="hud-right" class="hud-panel">
+      <div class="hud-row">Primary: <span id="primary-weapon">Sword</span> (Lv <span id="primary-level">1</span>) <span id="primary-active" class="weapon-tag">Active</span></div>
+      <div class="hud-row">Secondary: <span id="secondary-weapon">Bow</span> (Lv <span id="secondary-level">1</span>) <span id="secondary-active" class="weapon-tag">Active</span></div>
+      <div class="hud-row">Active: <span id="active-weapon">Primary</span></div>
+      <div class="hud-row">Powerup: <span id="powerup-name">None</span> (<span id="powerup-timer">0</span>s)</div>
+      <div class="hud-row">Status: <span id="powerup-message">—</span></div>
+    </div>
+
+    <div id="hud-bottom" class="hud-panel">
+      <div class="hud-row">Player Health</div>
+      <div class="health-bar"><div id="player-health-fill" class="health-fill"></div></div>
+      <div class="hud-row">Enemy Status: <span id="enemy-status">Active</span></div>
+      <div class="health-bar"><div id="enemy-health-fill" class="health-fill"></div></div>
+    </div>
+
+    <!-- Pause button -->
+    <button id="pause-btn">Pause</button>
+
+    <!-- Swap hint -->
+    <div id="swap-hint">Press B to swap weapons</div>
+
+    <!-- Wave/boss announcements -->
+    <div id="message-banner"></div>
+
+    <!-- Three.js canvas mount point -->
+    <div id="game-container"></div>
+
+    <script type="module" src="/src/scripts/block-battle/main.js"></script>
+  </body>
+</html>

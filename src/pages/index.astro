@@ -1,15 +1,26 @@
 ---
+/*
+  Ideas Kids Can - Home Page
+  Version: 0.2.0
+  Last Updated: 2026-01-28
+  Changelog:
+  - 0.2.0: Added release header and inline comments for homepage structure.
+*/
+// Home page for Ideas Kids Can.
 import Layout from '../layouts/Layout.astro';
 import Markdown from '../components/Markdown.astro';
 
+// Intro copy for the homepage hero section.
 const explainer = `
 Welcome to Ideas Kids Can this website is used to showcase Games, Comics, and content created by Kids for Kids.`;
-//Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
-//Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
+// Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
+// Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
 ---
 
 <Layout title="Welcome to Ideas Kids Can.">
+    <!-- Main page heading -->
     <h1 class="mb-10">Ideas Kids Can</h1>
+    <!-- Intro paragraph rendered from markdown -->
     <Markdown content={explainer} class="mb-10 text-lg" />
     <p>
     <!-- THIS IS HOW TO COMMENT!!!
@@ -17,10 +28,9 @@ Welcome to Ideas Kids Can this website is used to showcase Games, Comics, and co
     -->
     </p>
 
+    <!-- Short lead-in text for the games section -->
     <p>Check out these awesome games created by kids!</p>
     
 </Layout>
-
-
 
 
