@@ -2,9 +2,10 @@
 ---
 <!--
   Block Battle - Arena Shell
-  Version: 0.3.0
-  Last Updated: 2026-01-28
+  Version: 0.3.1
+  Last Updated: 2026-01-30
   Changelog:
+  - 0.3.1: Added debug HUD panel for testing.
   - 0.3.0: Removed post-wave modal in favor of arena pad.
   - 0.2.9: Added Rogue Mode toggle to the armory menu.
   - 0.2.8: Highlighted active weapon, added swap hint, and back-to-primary control.
@@ -56,6 +57,15 @@
         bottom: 20px;
         left: 20px;
         min-width: 240px;
+      }
+      #debug-hud {
+        bottom: 20px;
+        right: 20px;
+        min-width: 220px;
+        font-size: 11px;
+        line-height: 1.4;
+        white-space: pre-line;
+        opacity: 0.9;
       }
       #pause-btn {
         position: absolute;
@@ -305,6 +315,8 @@
       <div class="hud-row">Enemy Status: <span id="enemy-status">Active</span></div>
       <div class="health-bar"><div id="enemy-health-fill" class="health-fill"></div></div>
     </div>
+
+    <div id="debug-hud" class="hud-panel">Debug HUD</div>
 
     <!-- Pause button -->
     <button id="pause-btn">Pause</button>

@@ -1,8 +1,13 @@
 /*
   Block Battle - Main Game Loop
-  Version: 0.6.6
+  Version: 0.6.11
   Last Updated: 2026-01-30
   Changelog:
+  - 0.6.11: Restored hammer knockback by applying push stats on hit.
+  - 0.6.10: Added debug HUD toggle flag.
+  - 0.6.9: Spawn boss immediately on final non-boss defeat event.
+  - 0.6.8: Spawn boss strictly from non-boss defeat counts (no bossPending dependency).
+  - 0.6.7: Added debug HUD output for live wave and boss state.
   - 0.6.6: Added active non-boss fallback check to boss spawn and enforced defeat accounting.
   - 0.6.5: Switched boss spawn to count-based non-boss defeats and de-duplicated enemy defeat events.
   - 0.6.4: Fixed boss spawn countdown logic and blocked corridor while plasma gate is active.
@@ -58,6 +63,10 @@ import { createRobot } from '../Robot.js';
 // Core Three.js scene setup.
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x101015);
+
+// Toggle debug HUD visibility.
+const DEBUG_ENABLED = false;// Set to true to enable debug HUD on the bottom right corner for enemy counts, 
+                            // wave state, and player position.
 
 // Isometric-ish orthographic camera configuration.
 const aspect = window.innerWidth / window.innerHeight;
@@ -306,7 +315,8 @@ const UI = {
   points: document.getElementById('points'),
   playerHealth: document.getElementById('player-health-fill'),
   enemyStatus: document.getElementById('enemy-status'),
-  enemyHealth: document.getElementById('enemy-health-fill')
+  enemyHealth: document.getElementById('enemy-health-fill'),
+  debugHud: document.getElementById('debug-hud')
 };
 
 // Weapon definitions + level configs + armory descriptors.
@@ -329,9 +339,9 @@ const WEAPONS = {
     icon: '🔨',
     description: 'Heavy hitter with slower swings and splash impact.',
     levels: [
-      { label: 'Standard', damage: 18, defense: 0.05, range: 2.4, cooldown: 0.7, speed: 0.85 },
-      { label: 'Fire', damage: 22, defense: 0.05, range: 2.4, cooldown: 0.7, speed: 0.9, burn: 4 },
-      { label: 'Laser', damage: 26, defense: 0.1, range: 2.6, cooldown: 0.75, speed: 0.9, splash: 3.5 }
+      { label: 'Standard', damage: 18, defense: 0.05, range: 2.4, cooldown: 0.7, speed: 0.85, push: 1.4 },
+      { label: 'Fire', damage: 22, defense: 0.05, range: 2.4, cooldown: 0.7, speed: 0.9, burn: 4, push: 1.7 },
+      { label: 'Laser', damage: 26, defense: 0.1, range: 2.6, cooldown: 0.75, speed: 0.9, splash: 3.5, push: 2.0 }
     ],
     upgradeCosts: [0, 35, 70]
   },
@@ -351,11 +361,11 @@ const WEAPONS = {
     name: 'Shield',
     type: 'defense',
     icon: '🛡️',
-    description: 'Defensive bash weapon that reduces incoming damage.',
+    description: 'Defensive bash weapon that reduces incoming damage, pushes enemies back and recovers health',
     levels: [
-      { label: 'Wood', damage: 6, defense: 0.35, range: 2.0, cooldown: 0.6, speed: 0.9, push: 1.2, block: 0.35 },
-      { label: 'Iron', damage: 8, defense: 0.45, range: 2.0, cooldown: 0.6, speed: 0.9, push: 1.5, block: 0.45 },
-      { label: 'Diamond', damage: 10, defense: 0.6, range: 2.2, cooldown: 0.5, speed: 0.95, push: 1.8, block: 0.6 }
+      { label: 'Wood', damage: 6, defense: 1.5, range: 2.0, cooldown: 0.6, speed: 0.9, push: 3.2, block: 1.35 },
+      { label: 'Iron', damage: 8, defense: 4.5, range: 2.0, cooldown: 0.6, speed: 0.9, push: 7.5, block: 2.45 },
+      { label: 'Diamond', damage: 10, defense: 7.5, range: 2.2, cooldown: 0.5, speed: 0.95, push: 12.8, block: 4.6 }
     ],
     upgradeCosts: [0, 25, 55]
   },
@@ -476,6 +486,7 @@ let waveDefeated = 0;
 let waveNonBossSpawned = 0;
 let waveNonBossDefeated = 0;
 let bossSpawned = false;
+let debugHudTimer = 0;
 
 // Input system + time.
 const input = new InputManager();
@@ -710,6 +721,34 @@ function updateHud() {
   updateWeaponVisual();
 }
 
+function updateDebugHud(dt) {
+  if (!UI.debugHud) return;
+  if (!DEBUG_ENABLED) {
+    UI.debugHud.style.display = 'none';
+    return;
+  }
+  UI.debugHud.style.display = 'block';
+  debugHudTimer -= dt;
+  if (debugHudTimer > 0) return;
+  debugHudTimer = 0.2;
+
+  const aliveEnemies = enemies.filter((enemy) => enemy.health > 0 && !enemy.defeated);
+  const liveNonBoss = aliveEnemies.filter((enemy) => !enemy.isBoss).length;
+  const bossAlive = aliveEnemies.some((enemy) => enemy.isBoss);
+
+  UI.debugHud.textContent = [
+    `wave: ${currentWave} (${waveComplete ? 'complete' : 'active'})`,
+    `pendingWave: ${pendingWave}`,
+    `bossPending: ${bossPending} bossSpawned: ${bossSpawned}`,
+    `enemies: ${enemies.length} alive: ${aliveEnemies.length}`,
+    `nonBoss live: ${liveNonBoss}`,
+    `nonBoss spawned/defeated: ${waveNonBossSpawned}/${waveNonBossDefeated}`,
+    `bossAlive: ${bossAlive ? 'yes' : 'no'}`,
+    `waveElapsed: ${waveElapsed.toFixed(1)}s`,
+    `startGrace: ${waveStartGrace.toFixed(1)}s`
+  ].join('\n');
+}
+
 // Toggle weapon visuals on the player model.
 function updateWeaponVisual() {
   if (!player.userData) return;
@@ -767,6 +806,8 @@ function spawnEnemy(size = 'small', position = null) {
     damage: stats.damage,
     points: stats.points,
     attackCooldown: 0,
+    dodgeTimer: 0,
+    dodgeDir: new THREE.Vector3(0, 0, 0),
     size,
     status: {},
     isBoss: size === 'boss',
@@ -844,8 +885,9 @@ function startWave(waveNumber) {
 function updateEnemies(dt) {
   if (waveComplete) return;
   if (!gameRunning) return;
+  const hasProjectiles = projectiles.length > 0;
   enemies.forEach((enemy) => {
-    if (enemy.health <= 0) return;
+    if (enemy.health <= 0 || enemy.defeated) return;
 
     if (enemy.status.freeze > 0) {
       enemy.status.freeze -= dt;
@@ -862,10 +904,24 @@ function updateEnemies(dt) {
     if (enemy.status.slow > 0) enemy.status.slow -= dt;
 
     let moveDir = dir.clone();
-    // Basic dodge if a projectile is nearby.
-    const nearbyProjectile = projectiles.find((proj) => proj.mesh.position.distanceTo(enemy.mesh.position) < 4);
-    if (nearbyProjectile) {
-      moveDir = new THREE.Vector3(-dir.z, 0, dir.x);
+    if (enemy.dodgeTimer > 0) {
+      enemy.dodgeTimer -= dt;
+      moveDir = enemy.dodgeDir.clone();
+    } else if (hasProjectiles) {
+      for (let i = 0; i < projectiles.length; i++) {
+        const proj = projectiles[i];
+        if (proj.mesh.position.distanceTo(enemy.mesh.position) < 4) {
+          // Randomize dodge direction so it feels less robotic.
+          const side = Math.random() < 0.5 ? -1 : 1;
+          enemy.dodgeDir = new THREE.Vector3(-dir.z, 0, dir.x)
+            .multiplyScalar(side)
+            .add(dir.clone().multiplyScalar(0.2))
+            .normalize();
+          enemy.dodgeTimer = 0.35;
+          moveDir = enemy.dodgeDir.clone();
+          break;
+        }
+      }
     }
 
     if (distance > 2.2) {
@@ -886,19 +942,12 @@ function updateEnemies(dt) {
     }
   });
 
-  // Ensure any defeated enemies are accounted for even if they died outside the normal damage flow.
-  enemies.forEach((enemy) => {
-    if (enemy.health <= 0) {
-      handleEnemyDefeat(enemy);
-    }
-  });
-
   // Separate enemies so they don't stack into each other.
   for (let i = 0; i < enemies.length; i++) {
     for (let j = i + 1; j < enemies.length; j++) {
       const a = enemies[i];
       const b = enemies[j];
-      if (a.health <= 0 || b.health <= 0) continue;
+      if (a.health <= 0 || b.health <= 0 || a.defeated || b.defeated) continue;
       const delta = new THREE.Vector3().subVectors(a.mesh.position, b.mesh.position);
       const dist = delta.length();
       const minDist = 1.6;
@@ -912,24 +961,13 @@ function updateEnemies(dt) {
     }
   }
 
-  const aliveEnemies = enemies.filter((enemy) => enemy.health > 0);
+  const aliveEnemies = enemies.filter((enemy) => enemy.health > 0 && !enemy.defeated);
   const nonBossAlive = aliveEnemies.some((enemy) => !enemy.isBoss);
   const bossAlive = aliveEnemies.some((enemy) => enemy.isBoss);
 
-  if (
-    bossPending
-    && waveNonBossSpawned > 0
-    && (waveNonBossDefeated >= waveNonBossSpawned || !nonBossAlive)
-  ) {
-    spawnEnemy('boss', getGateSpawnPosition());
-    bossPending = false;
-    bossSpawned = true;
-    showMessage('Boss entering!', 2000);
-  }
-
   updateRogue(dt);
 
-  const boss = enemies.find((enemy) => enemy.isBoss);
+  const boss = enemies.find((enemy) => enemy.isBoss && enemy.health > 0 && !enemy.defeated);
   if (boss && UI.enemyHealth) {
     const pct = Math.max(0, (boss.health / boss.maxHealth) * 100);
     UI.enemyHealth.style.width = `${pct}%`;
@@ -940,7 +978,6 @@ function updateEnemies(dt) {
 
   if (
     !waveComplete
-    && !bossPending
     && bossSpawned
     && !bossAlive
     && waveStartGrace <= 0
@@ -1034,7 +1071,7 @@ function performAttack() {
   const hitTargets = enemies.filter((enemy) => enemy.health > 0 && enemy.mesh.position.distanceTo(player.position) < config.range);
   hitTargets.forEach((enemy) => {
     applyWeaponDamage(enemy, config);
-    if (weapon.type === 'defense' && config.push) {
+    if (config.push) {
       const pushDir = new THREE.Vector3().subVectors(enemy.mesh.position, player.position).normalize();
       enemy.mesh.position.add(pushDir.multiplyScalar(config.push));
     }
@@ -1123,6 +1160,16 @@ function flashMesh(mesh, skipMaterial = null) {
   });
 }
 
+function trySpawnBoss() {
+  if (bossSpawned) return;
+  if (waveNonBossSpawned === 0) return;
+  if (waveNonBossDefeated < waveNonBossSpawned) return;
+  spawnEnemy('boss', getGateSpawnPosition());
+  bossPending = false;
+  bossSpawned = true;
+  showMessage('Boss entering!', 2000);
+}
+
 // Enemy defeat logic (points + fall over).
 function handleEnemyDefeat(enemy) {
   if (enemy.health > 0) return;
@@ -1133,11 +1180,16 @@ function handleEnemyDefeat(enemy) {
   waveDefeated += 1;
   if (!enemy.isBoss) {
     waveNonBossDefeated += 1;
+    trySpawnBoss();
   }
   enemy.mesh.rotation.x = -Math.PI / 2;
   enemy.mesh.position.y = 0.5;
   setTimeout(() => {
     scene.remove(enemy.mesh);
+    const index = enemies.indexOf(enemy);
+    if (index !== -1) {
+      enemies.splice(index, 1);
+    }
   }, 600);
 }
 
@@ -1945,6 +1997,7 @@ function animate() {
   if (!waveComplete) {
     waveElapsed += dt;
   }
+  updateDebugHud(dt);
   if (!waveComplete && waveElapsed > 2 && waveSpawned === 0) {
     const fallback = getGateSpawnPosition();
     spawnWaveBatch(currentWave, fallback);
