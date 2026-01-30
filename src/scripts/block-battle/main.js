@@ -1,8 +1,16 @@
 /*
   Block Battle - Main Game Loop
-  Version: 0.6.11
+  Version: 0.6.19
   Last Updated: 2026-01-30
   Changelog:
+  - 0.6.19: Replaced lobby hard clamp with wall-collision movement bounds.
+  - 0.6.18: Tightened lobby bounds so players cannot exit the lobby walls.
+  - 0.6.17: Added neon trim + lobby starfield extension for brighter lobby.
+  - 0.6.16: Adjusted lobby layout with rotated upgrade table, walls, and spaced pads.
+  - 0.6.15: Aligned lobby beyond corridor end and updated camera/clamp for lobby access.
+  - 0.6.14: Shifted lobby further south to prevent corridor overlap.
+  - 0.6.13: Rebuilt lobby layout with west wall upgrade table, switch pad, and return portal.
+  - 0.6.12: Centralized arena/lobby layout and spawn zones for scaling maps.
   - 0.6.11: Restored hammer knockback by applying push stats on hit.
   - 0.6.10: Added debug HUD toggle flag.
   - 0.6.9: Spawn boss immediately on final non-boss defeat event.
@@ -142,13 +150,21 @@ nextWaveLabel.position.copy(nextWavePad.position).add(new THREE.Vector3(0, 2.2, 
 scene.add(nextWaveLabel);
 
 // Lobby objects (same scene, south of arena).
-const lobbyOrigin = new THREE.Vector3(0, 0, 60);
+let lobbyOrigin = new THREE.Vector3(0, 0, 60);
 const lobbyObjects = [];
+const LOBBY_SIZE = 30;
+const LOBBY_WALK_INSET = 1;
 const lobby = createLobbyScene();
-const lobbyZoneRadius = 18;
+const LOBBY_GAP_FROM_CORRIDOR = 2;
 
 function isInLobbyArea(pos = player.position) {
-  return pos.distanceTo(lobbyOrigin) < lobbyZoneRadius;
+  const half = LOBBY_SIZE / 2 - LOBBY_WALK_INSET;
+  return (
+    pos.x >= lobbyOrigin.x - half
+    && pos.x <= lobbyOrigin.x + half
+    && pos.z >= lobbyOrigin.z - half
+    && pos.z <= lobbyOrigin.z + half
+  );
 }
 
 // Wave-to-map assignment. Each range uses a fixed arena size.
@@ -159,8 +175,16 @@ const MAPS = [
 ];
 
 // Active arena configuration for spawn bounds.
-// Active arena configuration for spawn bounds.
 const arenaState = { size: 40 };
+const ARENA_SPAWN_MARGIN = 4;
+const arenaLayout = {
+  half: arenaState.size / 2,
+  playerSpawn: new THREE.Vector3(0, 0, 0),
+  startWave: new THREE.Vector3(0, 0, 0),
+  enemyGate: new THREE.Vector3(0, 0, -arenaState.size / 2 + 1.2),
+  southGate: new THREE.Vector3(0, 0, arenaState.size / 2 - 1.2),
+  spawnBounds: { minX: -16, maxX: 16, minZ: -16, maxZ: 16 }
+};
 
 // Corridor that connects arena south gate to the lobby area.
 const corridor = createLobbyCorridor();
@@ -168,6 +192,50 @@ const corridor = createLobbyCorridor();
 function getMapForWave(waveNumber) {
   const match = MAPS.find((map) => waveNumber >= map.waves[0] && waveNumber <= map.waves[1]);
   return match || MAPS[MAPS.length - 1];
+}
+
+function updateArenaLayout() {
+  const half = arenaState.size / 2;
+  arenaLayout.half = half;
+  arenaLayout.playerSpawn.set(0, 0, 0);
+  arenaLayout.startWave.set(0, 0, 0);
+
+  const gateInset = 1.2;
+  if (gatePosition) {
+    arenaLayout.enemyGate.copy(gatePosition);
+  } else {
+    arenaLayout.enemyGate.set(0, 0, -half + gateInset);
+  }
+  arenaLayout.southGate.set(0, 0, half - gateInset);
+
+  arenaLayout.spawnBounds.minX = -half + ARENA_SPAWN_MARGIN;
+  arenaLayout.spawnBounds.maxX = half - ARENA_SPAWN_MARGIN;
+  arenaLayout.spawnBounds.minZ = -half + ARENA_SPAWN_MARGIN;
+  arenaLayout.spawnBounds.maxZ = half - ARENA_SPAWN_MARGIN;
+
+  southGatePosition.copy(arenaLayout.southGate);
+  if (typeof arenaGate !== 'undefined' && arenaGate) {
+    arenaGate.position.set(southGatePosition.x, 1.5, southGatePosition.z);
+  }
+  plasmaShield.position.set(southGatePosition.x, 1.5, southGatePosition.z + 2);
+
+  nextWavePad.position.set(arenaLayout.startWave.x, 0.08, arenaLayout.startWave.z);
+  nextWaveLabel.position.copy(nextWavePad.position).add(new THREE.Vector3(0, 2.2, 0));
+
+  if (corridor) {
+    corridor.floor.position.set(0, 0, southGatePosition.z + corridor.length / 2);
+    corridor.wallLeft.position.set(-corridor.width / 2, 1.5, corridor.floor.position.z);
+    corridor.wallRight.position.set(corridor.width / 2, 1.5, corridor.floor.position.z);
+  }
+
+  const oldOrigin = lobbyOrigin.clone();
+  const corridorCenterZ = corridor ? corridor.floor.position.z : southGatePosition.z;
+  const corridorEndZ = corridor ? corridorCenterZ + corridor.length / 2 : southGatePosition.z;
+  lobbyOrigin.set(0, 0, corridorEndZ + (LOBBY_SIZE / 2) + LOBBY_GAP_FROM_CORRIDOR);
+  const lobbyDelta = lobbyOrigin.clone().sub(oldOrigin);
+  if (lobbyDelta.lengthSq() > 0.0001) {
+    lobbyObjects.forEach((obj) => obj.position.add(lobbyDelta));
+  }
 }
 
 function setArenaForWave(waveNumber) {
@@ -192,32 +260,28 @@ function setArenaForWave(waveNumber) {
   gatePosition = wallBundle.gate;
   walls.forEach((wall) => scene.add(wall));
 
-  southGatePosition = new THREE.Vector3(0, 0, map.size / 2 - 1.2);
-  arenaGate.position.set(southGatePosition.x, 1.5, southGatePosition.z);
-  plasmaShield.position.set(southGatePosition.x, 1.5, southGatePosition.z + 2);
-
-  nextWavePad.position.set(0, 0.08, 0);
-  nextWaveLabel.position.copy(nextWavePad.position).add(new THREE.Vector3(0, 2.2, 0));
-
-  // Reposition corridor to align with the south gate.
-  if (corridor) {
-    corridor.floor.position.set(0, 0, southGatePosition.z + corridor.length / 2);
-    corridor.wallLeft.position.set(-corridor.width / 2, 1.5, corridor.floor.position.z);
-    corridor.wallRight.position.set(corridor.width / 2, 1.5, corridor.floor.position.z);
-  }
+  updateArenaLayout();
 }
 
 function getSpawnRange() {
-  return Math.max(arenaState.size / 2 - 6, 10);
+  return Math.max(arenaLayout.half - ARENA_SPAWN_MARGIN, 10);
+}
+
+function getRandomArenaPosition(y = 0) {
+  const { minX, maxX, minZ, maxZ } = arenaLayout.spawnBounds;
+  return new THREE.Vector3(
+    THREE.MathUtils.randFloat(minX, maxX),
+    y,
+    THREE.MathUtils.randFloat(minZ, maxZ)
+  );
+}
+
+function getPowerupSpawnPosition() {
+  return getRandomArenaPosition(0.6);
 }
 
 function getGateSpawnPosition() {
-  const half = arenaState.size / 2;
-  if (!gatePosition) return new THREE.Vector3(0, 0, -half + 2);
-  if (Math.abs(gatePosition.z) < 1) {
-    return new THREE.Vector3(0, 0, -half + 2);
-  }
-  return gatePosition.clone();
+  return arenaLayout.enemyGate.clone();
 }
 
 function buildWalls(size) {
@@ -250,38 +314,52 @@ function clampToArena(position) {
   position.z = Math.max(-half, Math.min(half, position.z));
 }
 
-function clampPlayerPosition(position) {
-  const half = arenaState.size / 2 - 1;
+function clampAxis(current, next, min, max) {
+  if (current < min || current > max) {
+    return THREE.MathUtils.clamp(current, min, max);
+  }
+  if (next < min || next > max) {
+    return current;
+  }
+  return next;
+}
+
+function resolvePlayerMovement(currentPos, nextPos) {
+  const half = arenaLayout.half - 1;
   const corridorHalf = corridor ? corridor.width / 2 - 1 : 5;
   const corridorStartZ = half;
   const corridorEndZ = corridor ? corridor.floor.position.z + corridor.length / 2 - 1 : half;
-  const lobbyHalf = lobbyZoneRadius;
+  const lobbyHalf = LOBBY_SIZE / 2 - LOBBY_WALK_INSET;
   const lobbyMinX = lobbyOrigin.x - lobbyHalf;
   const lobbyMaxX = lobbyOrigin.x + lobbyHalf;
   const lobbyMinZ = lobbyOrigin.z - lobbyHalf;
   const lobbyMaxZ = lobbyOrigin.z + lobbyHalf;
-  const inLobbyBox = position.z >= lobbyMinZ && position.z <= lobbyMaxZ && position.x >= lobbyMinX && position.x <= lobbyMaxX;
+
+  const inLobbyNow = currentPos.z >= lobbyMinZ && currentPos.z <= lobbyMaxZ && currentPos.x >= lobbyMinX && currentPos.x <= lobbyMaxX;
+  const inLobbyNext = nextPos.z >= lobbyMinZ && nextPos.z <= lobbyMaxZ && nextPos.x >= lobbyMinX && nextPos.x <= lobbyMaxX;
 
   if (!waveComplete) {
-    position.x = Math.max(-half, Math.min(half, position.x));
-    position.z = Math.max(-half, Math.min(half, position.z));
-    return;
+    nextPos.x = clampAxis(currentPos.x, nextPos.x, -half, half);
+    nextPos.z = clampAxis(currentPos.z, nextPos.z, -half, half);
+    return nextPos;
   }
 
-  if (inLobbyBox) {
-    position.x = Math.max(lobbyMinX, Math.min(lobbyMaxX, position.x));
-    position.z = Math.max(lobbyMinZ, Math.min(lobbyMaxZ, position.z));
-    return;
+  if (inLobbyNow || inLobbyNext) {
+    nextPos.x = clampAxis(currentPos.x, nextPos.x, lobbyMinX, lobbyMaxX);
+    nextPos.z = clampAxis(currentPos.z, nextPos.z, lobbyMinZ, lobbyMaxZ);
+    return nextPos;
   }
 
-  if (position.z > corridorStartZ) {
-    position.x = Math.max(-corridorHalf, Math.min(corridorHalf, position.x));
-    position.z = Math.max(corridorStartZ, Math.min(corridorEndZ, position.z));
-    return;
+  if (currentPos.z > corridorStartZ || nextPos.z > corridorStartZ) {
+    const corridorMaxZ = Math.max(corridorEndZ, lobbyMinZ);
+    nextPos.z = clampAxis(currentPos.z, nextPos.z, corridorStartZ, corridorMaxZ);
+    nextPos.x = clampAxis(currentPos.x, nextPos.x, -corridorHalf, corridorHalf);
+    return nextPos;
   }
 
-  position.x = Math.max(-half, Math.min(half, position.x));
-  position.z = Math.max(-half, Math.min(half, position.z));
+  nextPos.x = clampAxis(currentPos.x, nextPos.x, -half, half);
+  nextPos.z = clampAxis(currentPos.z, nextPos.z, -half, half);
+  return nextPos;
 }
 
 // Cached UI elements.
@@ -773,11 +851,10 @@ function updateWeaponVisual() {
 function spawnEnemy(size = 'small', position = null) {
   const color = size === 'boss' ? 0xff9999 : size === 'large' ? 0xff7777 : size === 'medium' ? 0xff5555 : 0xff3333;
   const enemy = createRobot(color);
-  const range = getSpawnRange();
   if (position) {
     enemy.position.copy(position);
   } else {
-    enemy.position.set((Math.random() - 0.5) * range * 2, 0, (Math.random() - 0.5) * range * 2);
+    enemy.position.copy(getRandomArenaPosition(0));
   }
   enemy.lookAt(0, 0, 0);
   scene.add(enemy);
@@ -862,6 +939,7 @@ function startWave(waveNumber) {
   if (UI.gameOver) UI.gameOver.style.display = 'none';
   if (playerState.isDead) resetPlayer();
   setArenaForWave(waveNumber);
+  player.position.copy(arenaLayout.playerSpawn);
 
   spawnWaveBatch(waveNumber);
   if (enemies.length === 0) {
@@ -1029,7 +1107,7 @@ function resetPlayer() {
   playerState.swingTimer = 0;
   clearActivePowerups();
   player.rotation.x = 0;
-  player.position.set(0, 0, 0);
+  player.position.copy(arenaLayout.playerSpawn);
   updateHud();
 }
 
@@ -1197,8 +1275,7 @@ function trySpawnRogue() {
   if (!rogueEnabled) return;
   if (Math.random() > ROGUE_SPAWN_CHANCE) return;
   const mesh = createRobot(0xffcc00);
-  const range = getSpawnRange();
-  mesh.position.set((Math.random() - 0.5) * range * 2, 0, (Math.random() - 0.5) * range * 2);
+  mesh.position.copy(getRandomArenaPosition(0));
   mesh.lookAt(0, 0, 0);
   scene.add(mesh);
   rogue = {
@@ -1291,17 +1368,17 @@ function handleWaveComplete() {
 
 function handleLobbyInteractions() {
   if (!waveComplete) return;
-  const distToShop = player.position.distanceTo(lobby.shop);
-  const distToArmory = player.position.distanceTo(lobby.armory);
-  const distToGate = player.position.distanceTo(lobby.returnGate);
+  const distToUpgrade = lobby.upgradePad ? player.position.distanceTo(lobby.upgradePad.position) : Infinity;
+  const distToSwitch = lobby.switchPad ? player.position.distanceTo(lobby.switchPad.position) : Infinity;
+  const distToReturn = lobby.returnPortal ? player.position.distanceTo(lobby.returnPortal.position) : Infinity;
 
-  if (distToShop < 2.5) {
+  if (distToUpgrade < 2.5) {
     showMessage('Press F to upgrade active weapon', 1200);
     if (interactRequested) {
       tryUpgradeActiveWeapon();
     }
-  } else if (distToArmory < 2.5) {
-    showMessage('Press F to change weapons', 1200);
+  } else if (distToSwitch < 2.5) {
+    showMessage('Press F to switch weapons', 1200);
     if (interactRequested) {
       if (UI.menu) UI.menu.style.display = 'flex';
       armoryStep = 'primary';
@@ -1309,8 +1386,14 @@ function handleLobbyInteractions() {
       renderWeaponTabs();
       renderWeaponDetail();
     }
-  } else if (distToGate < 2.5) {
-    showMessage('Return gate (back to arena)', 1200);
+  } else if (distToReturn < 2.5) {
+    showMessage('Press F to return to arena', 1200);
+    if (interactRequested) {
+      player.position.copy(arenaLayout.playerSpawn);
+      nextWaveCountdown = 3;
+      waveStartQueued = true;
+      showMessage('Returning to arena...', 1200);
+    }
   }
 }
 
@@ -1673,8 +1756,10 @@ function createPlasmaTexture() {
 }
 
 function createLobbyScene() {
-  const objects = [];
-  const size = 30;
+  const objects = lobbyObjects;
+  objects.length = 0;
+  const size = LOBBY_SIZE;
+  const half = size / 2;
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(size, size),
     new THREE.MeshStandardMaterial({ color: 0x171824 })
@@ -1684,14 +1769,67 @@ function createLobbyScene() {
   scene.add(floor);
   objects.push(floor);
 
-  // Counter + food props.
-  const counter = new THREE.Mesh(
-    new THREE.BoxGeometry(10, 1.2, 2.5),
+  // Starfield extension under the lobby for continuity.
+  const lobbyStars = new THREE.Mesh(
+    new THREE.PlaneGeometry(size * 2.4, size * 2.4),
+    new THREE.MeshBasicMaterial({ map: createStarTexture(), side: THREE.DoubleSide })
+  );
+  lobbyStars.rotation.x = -Math.PI / 2;
+  lobbyStars.position.copy(lobbyOrigin).add(new THREE.Vector3(0, -0.25, 0));
+  scene.add(lobbyStars);
+  objects.push(lobbyStars);
+
+  // Low boundary walls to keep the player in the lobby.
+  const wallHeight = 1.2;
+  const wallThickness = 0.4;
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x202132 });
+  const northWall = new THREE.Mesh(new THREE.BoxGeometry(size, wallHeight, wallThickness), wallMat);
+  northWall.position.copy(lobbyOrigin).add(new THREE.Vector3(0, wallHeight / 2, -half));
+  scene.add(northWall);
+  objects.push(northWall);
+  const southWall = new THREE.Mesh(new THREE.BoxGeometry(size, wallHeight, wallThickness), wallMat);
+  southWall.position.copy(lobbyOrigin).add(new THREE.Vector3(0, wallHeight / 2, half));
+  scene.add(southWall);
+  objects.push(southWall);
+  const westWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, size), wallMat);
+  westWall.position.copy(lobbyOrigin).add(new THREE.Vector3(-half, wallHeight / 2, 0));
+  scene.add(westWall);
+  objects.push(westWall);
+  const eastWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, size), wallMat);
+  eastWall.position.copy(lobbyOrigin).add(new THREE.Vector3(half, wallHeight / 2, 0));
+  scene.add(eastWall);
+  objects.push(eastWall);
+
+  // Neon trim on the lobby perimeter (pink + cyan).
+  const trimMatPink = new THREE.MeshStandardMaterial({ color: 0xff4fd8, emissive: 0xff4fd8, emissiveIntensity: 0.9 });
+  const trimMatBlue = new THREE.MeshStandardMaterial({ color: 0x3fd1ff, emissive: 0x3fd1ff, emissiveIntensity: 0.9 });
+  const trimHeight = 0.15;
+  const trimInset = 0.35;
+  const trimNorth = new THREE.Mesh(new THREE.BoxGeometry(size - 0.6, trimHeight, 0.2), trimMatPink);
+  trimNorth.position.copy(lobbyOrigin).add(new THREE.Vector3(0, wallHeight + 0.05, -half + trimInset));
+  scene.add(trimNorth);
+  objects.push(trimNorth);
+  const trimSouth = new THREE.Mesh(new THREE.BoxGeometry(size - 0.6, trimHeight, 0.2), trimMatBlue);
+  trimSouth.position.copy(lobbyOrigin).add(new THREE.Vector3(0, wallHeight + 0.05, half - trimInset));
+  scene.add(trimSouth);
+  objects.push(trimSouth);
+  const trimWest = new THREE.Mesh(new THREE.BoxGeometry(0.2, trimHeight, size - 0.6), trimMatBlue);
+  trimWest.position.copy(lobbyOrigin).add(new THREE.Vector3(-half + trimInset, wallHeight + 0.05, 0));
+  scene.add(trimWest);
+  objects.push(trimWest);
+  const trimEast = new THREE.Mesh(new THREE.BoxGeometry(0.2, trimHeight, size - 0.6), trimMatPink);
+  trimEast.position.copy(lobbyOrigin).add(new THREE.Vector3(half - trimInset, wallHeight + 0.05, 0));
+  scene.add(trimEast);
+  objects.push(trimEast);
+
+  // Upgrade table on the west boundary.
+  const upgradeTable = new THREE.Mesh(
+    new THREE.BoxGeometry(2.5, 1.2, 10),
     new THREE.MeshStandardMaterial({ color: 0x222244 })
   );
-  counter.position.copy(lobbyOrigin).add(new THREE.Vector3(0, 0.6, -6));
-  scene.add(counter);
-  objects.push(counter);
+  upgradeTable.position.copy(lobbyOrigin).add(new THREE.Vector3(-half + 4.2, 0.6, -4));
+  scene.add(upgradeTable);
+  objects.push(upgradeTable);
 
   const foods = [
     { geo: new THREE.TorusGeometry(0.3, 0.12, 10, 18), color: 0x888888 },
@@ -1701,28 +1839,33 @@ function createLobbyScene() {
   ];
   foods.forEach((item, i) => {
     const mesh = new THREE.Mesh(item.geo, new THREE.MeshStandardMaterial({ color: item.color }));
-    mesh.position.copy(counter.position).add(new THREE.Vector3(-3 + i * 2, 0.9, 0));
+    mesh.position.copy(upgradeTable.position).add(new THREE.Vector3(0, 0.9, -3 + i * 2));
     scene.add(mesh);
     objects.push(mesh);
   });
 
-  // Shop pad.
-  const shopPad = new THREE.Mesh(
+  // Upgrade activation pad (in front of the table).
+  const upgradePad = new THREE.Mesh(
     new THREE.CylinderGeometry(1.4, 1.4, 0.2, 20),
     new THREE.MeshStandardMaterial({ color: 0x33ffcc, emissive: 0x33ffcc, emissiveIntensity: 0.6 })
   );
-  shopPad.position.copy(lobbyOrigin).add(new THREE.Vector3(-6, 0.1, 5));
-  scene.add(shopPad);
-  objects.push(shopPad);
+  upgradePad.position.copy(upgradeTable.position).add(new THREE.Vector3(3.2, -0.5, 0));
+  scene.add(upgradePad);
+  objects.push(upgradePad);
 
-  // Armory pad.
-  const armoryPad = new THREE.Mesh(
+  // Switch weapons pad (left/right of upgrade pad).
+  const switchPad = new THREE.Mesh(
     new THREE.CylinderGeometry(1.4, 1.4, 0.2, 20),
     new THREE.MeshStandardMaterial({ color: 0xffaa33, emissive: 0xffaa33, emissiveIntensity: 0.6 })
   );
-  armoryPad.position.copy(lobbyOrigin).add(new THREE.Vector3(6, 0.1, 5));
-  scene.add(armoryPad);
-  objects.push(armoryPad);
+  switchPad.position.copy(upgradePad.position).add(new THREE.Vector3(0, 0, 4.2));
+  scene.add(switchPad);
+  objects.push(switchPad);
+
+  const upgradeLabel = createTextSprite('Upgrade Here', '#33ffcc');
+  upgradeLabel.position.copy(upgradeTable.position).add(new THREE.Vector3(-2.4, 2.2, 0));
+  scene.add(upgradeLabel);
+  objects.push(upgradeLabel);
 
   // Training dummy.
   const dummy = createRobot(0x666666);
@@ -1735,36 +1878,39 @@ function createLobbyScene() {
     new THREE.BoxGeometry(3, 2, 1),
     new THREE.MeshStandardMaterial({ color: 0x2255aa, transparent: true, opacity: 0.4 })
   );
-  tank.position.copy(lobbyOrigin).add(new THREE.Vector3(7, 1, -6));
+  tank.position.copy(upgradeTable.position).add(new THREE.Vector3(3.2, 1, -6));
   scene.add(tank);
   objects.push(tank);
 
   // Neon light bars.
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     const light = new THREE.Mesh(
       new THREE.BoxGeometry(0.2, 1.5, 0.2),
       new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0xff00ff, emissiveIntensity: 1 })
     );
-    light.position.copy(lobbyOrigin).add(new THREE.Vector3(-7 + i * 4, 1, -10));
+    light.position.copy(upgradeTable.position).add(new THREE.Vector3(-1.4, 1, -6 + i * 6));
     scene.add(light);
     objects.push(light);
   }
 
-  // Return gate to arena.
-  const returnGate = new THREE.Mesh(
-    new THREE.BoxGeometry(4, 3, 0.4),
-    new THREE.MeshStandardMaterial({ color: 0x222233 })
+  // Return portal to arena.
+  const returnPortal = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.8, 1.8, 0.2, 24),
+    new THREE.MeshStandardMaterial({ color: 0x3fd1ff, emissive: 0x3fd1ff, emissiveIntensity: 0.7 })
   );
-  const returnGatePos = lobbyOrigin.clone().add(new THREE.Vector3(0, 1.5, 14));
-  returnGate.position.copy(returnGatePos);
-  scene.add(returnGate);
-  objects.push(returnGate);
+  returnPortal.position.copy(lobbyOrigin).add(new THREE.Vector3(6, 0.1, 10));
+  scene.add(returnPortal);
+  objects.push(returnPortal);
+  const returnLabel = createTextSprite('Return to Arena', '#7fd1ff');
+  returnLabel.position.copy(returnPortal.position).add(new THREE.Vector3(0, 2.2, 0));
+  scene.add(returnLabel);
+  objects.push(returnLabel);
 
   return {
-    spawn: lobbyOrigin.clone().add(new THREE.Vector3(10, 0, 10)),
-    shop: shopPad.position.clone(),
-    armory: armoryPad.position.clone(),
-    returnGate: returnGatePos.clone().add(new THREE.Vector3(0, -1.5, 0)),
+    spawnOffset: new THREE.Vector3(10, 0, 10),
+    upgradePad,
+    switchPad,
+    returnPortal,
     dummy
   };
 }
@@ -1819,8 +1965,7 @@ function spawnPowerup() {
     badge.position.set(0, 0.9, 0);
     mesh.add(badge);
   }
-  const range = getSpawnRange();
-  mesh.position.set((Math.random() - 0.5) * range * 2, 0.6, (Math.random() - 0.5) * range * 2);
+  mesh.position.copy(getPowerupSpawnPosition());
   scene.add(mesh);
   powerups.push({ mesh, def, timer: 15 });
 }
@@ -2007,9 +2152,10 @@ function animate() {
   }
 
   if (state.x !== 0 || state.y !== 0) {
-    player.position.x += state.x * speed;
-    player.position.z += state.y * speed;
-    clampPlayerPosition(player.position);
+    const nextPos = player.position.clone();
+    nextPos.x += state.x * speed;
+    nextPos.z += state.y * speed;
+    player.position.copy(resolvePlayerMovement(player.position, nextPos));
     player.rotation.y = Math.atan2(state.x, state.y);
     playerState.lastMoveDir.set(state.x, 0, state.y);
     if (player.userData.torso) {
@@ -2062,7 +2208,7 @@ function animate() {
     showMessage('Plasma shield active', 1200);
   }
 
-  nextWavePad.position.set(0, 0.08, 0);
+  nextWavePad.position.set(arenaLayout.startWave.x, 0.08, arenaLayout.startWave.z);
   nextWaveLabel.position.copy(nextWavePad.position).add(new THREE.Vector3(0, 2.2, 0));
   nextWavePad.visible = waveComplete;
   nextWaveLabel.visible = waveComplete;
@@ -2096,13 +2242,16 @@ function animate() {
   }
 
   const edgeBoost = Math.max(0, (Math.abs(player.position.z) / (arenaState.size / 2)) - 0.6);
-  const zoomOut = 20 + edgeBoost * 12 + (arenaState.size / 4);
+  const inLobby = isInLobbyArea();
+  const lobbyBoost = inLobby ? arenaState.size / 3 : 0;
+  const zoomOut = 20 + edgeBoost * 12 + (arenaState.size / 4) + lobbyBoost;
   camera.position.x = player.position.x + zoomOut;
   camera.position.z = player.position.z + zoomOut;
   const southEdge = arenaState.size / 2;
   const southT = Math.max(0, (player.position.z - southEdge * 0.4) / (southEdge * 0.6));
   const lookOffset = new THREE.Vector3(0, 0, -southT * (arenaState.size / 6));
-  camera.lookAt(player.position.clone().add(lookOffset));
+  const target = inLobby ? player.position.clone() : player.position.clone().add(lookOffset);
+  camera.lookAt(target);
 
   renderer.render(scene, camera);
 
