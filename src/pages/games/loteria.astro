@@ -1,482 +1,648 @@
 ---
+
 ---
+
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Loteria Caller</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Yatra+One&display=swap');
+    <head>
+        <meta charset="UTF-8" />
+        <title>Loteria Caller</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style is:global>
+            @import url('https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Yatra+One&display=swap');
 
-      :root {
-        color-scheme: light;
-        --bg: #f7e0b7;
-        --bg-2: #f4c281;
-        --ink: #2b1f1f;
-        --accent: #f04d3a;
+            :root {
+                color-scheme: light;
+                --bg: #f7e0b7;
+                --bg-2: #f4c281;
+                --ink: #2b1f1f;
+                --accent: #f04d3a;
         --accent-2: #2b9ea3;
+        --accent-green: #3bbd6a;
+        --accent-blue: #2f74c9;
         --panel: rgba(255, 255, 255, 0.82);
         --panel-strong: rgba(255, 255, 255, 0.95);
         --shadow: 0 16px 40px rgba(47, 27, 16, 0.18);
+        --card-size: clamp(72px, 7vw, 112px);
       }
 
-      * {
-        box-sizing: border-box;
-      }
+            * {
+                box-sizing: border-box;
+            }
 
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background: radial-gradient(circle at top, #fff1d6 0%, var(--bg) 30%, var(--bg-2) 100%);
-        color: var(--ink);
-        font-family: 'Signika', sans-serif;
-      }
+            body {
+                margin: 0;
+                min-height: 100vh;
+                background: radial-gradient(circle at top, #fff1d6 0%, var(--bg) 30%, var(--bg-2) 100%);
+                color: var(--ink);
+                font-family: 'Signika', sans-serif;
+            }
 
-      body::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background-image: radial-gradient(circle, rgba(240, 77, 58, 0.08) 1px, transparent 1px);
-        background-size: 28px 28px;
-        opacity: 0.5;
-        pointer-events: none;
-      }
+            body::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                background-image: radial-gradient(circle, rgba(240, 77, 58, 0.08) 1px, transparent 1px);
+                background-size: 28px 28px;
+                opacity: 0.5;
+                pointer-events: none;
+            }
 
-      #loteria-app {
-        position: relative;
-        z-index: 1;
-        padding: 32px 24px 40px;
-        max-width: 1300px;
-        margin: 0 auto;
-        display: grid;
-        gap: 24px;
-      }
+            #loteria-app {
+                position: relative;
+                z-index: 1;
+                padding: 32px 24px 40px;
+                max-width: 1300px;
+                margin: 0 auto;
+                display: grid;
+                gap: 24px;
+            }
 
-      header.hero {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        align-items: center;
-        justify-content: space-between;
-        background: var(--panel-strong);
-        border-radius: 20px;
-        padding: 20px 24px;
-        box-shadow: var(--shadow);
-      }
+            header.hero {
+                display: grid;
+                grid-template-columns: minmax(240px, 1.2fr) minmax(220px, 0.9fr) minmax(260px, 1fr);
+                gap: 16px;
+                align-items: center;
+                background: var(--panel-strong);
+                border-radius: 20px;
+                padding: 20px 24px;
+                box-shadow: var(--shadow);
+            }
 
-      .hero-title {
-        margin: 0;
-        font-family: 'Yatra One', serif;
-        font-size: clamp(2rem, 3vw, 2.6rem);
-        letter-spacing: 0.5px;
-      }
+            .hero-title {
+                margin: 0;
+                font-family: 'Yatra One', serif;
+                font-size: clamp(2rem, 3vw, 2.6rem);
+                letter-spacing: 0.5px;
+            }
 
-      .hero-subtitle {
-        margin: 6px 0 0;
-        font-size: 1rem;
-        max-width: 520px;
-        line-height: 1.4;
-      }
+            .hero-subtitle {
+                margin: 6px 0 0;
+                font-size: 1rem;
+                max-width: 520px;
+                line-height: 1.4;
+            }
 
-      .hero-meta {
-        display: grid;
-        gap: 6px;
-        padding: 12px 16px;
-        border-radius: 14px;
-        background: rgba(43, 158, 163, 0.14);
-        min-width: 200px;
-      }
+            .hero-left {
+                display: grid;
+                gap: 6px;
+            }
 
-      .hero-meta span {
-        font-weight: 600;
-      }
+            .hero-center {
+                display: grid;
+                justify-items: center;
+                gap: 12px;
+                text-align: center;
+            }
 
-      .controls {
-        background: var(--panel-strong);
-        border-radius: 20px;
-        padding: 18px 22px;
-        box-shadow: var(--shadow);
-        display: grid;
-        gap: 18px;
-      }
+            .hero-right {
+                display: grid;
+                grid-template-columns: auto auto;
+                gap: 12px;
+                align-items: center;
+                justify-content: end;
+            }
 
-      .btn-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
+            .auto-panel {
+                display: grid;
+                gap: 10px;
+                padding: 12px 16px;
+                border-radius: 16px;
+                background: rgba(255, 255, 255, 0.72);
+            }
 
-      button {
-        border: none;
-        border-radius: 999px;
-        padding: 10px 18px;
-        font-family: 'Signika', sans-serif;
-        font-weight: 600;
-        font-size: 0.95rem;
-        cursor: pointer;
-        background: var(--accent);
-        color: white;
-        box-shadow: 0 10px 20px rgba(240, 77, 58, 0.25);
-        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-      }
+            .auto-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                font-weight: 600;
+            }
 
-      button.secondary {
-        background: var(--accent-2);
-        box-shadow: 0 10px 20px rgba(43, 158, 163, 0.25);
-      }
+            .delay-row {
+                display: grid;
+                gap: 6px;
+                text-align: center;
+            }
 
-      button.ghost {
-        background: rgba(43, 158, 163, 0.16);
-        color: var(--ink);
-        box-shadow: none;
-      }
+            .control-stack {
+                display: grid;
+                grid-template-columns: repeat(2, max-content);
+                gap: 10px;
+                justify-content: end;
+            }
 
-      button:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-        box-shadow: none;
-      }
+            .control-row {
+                display: contents;
+            }
 
-      button:not(:disabled):hover {
-        transform: translateY(-1px);
-        box-shadow: 0 14px 30px rgba(47, 27, 16, 0.2);
-      }
+            .control-stack button {
+                width: 100%;
+            }
 
-      .control-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 12px 18px;
-      }
+            .hero-meta {
+                display: grid;
+                gap: 6px;
+                padding: 12px 16px;
+                border-radius: 14px;
+                background: rgba(43, 158, 163, 0.14);
+                min-width: 200px;
+            }
 
-      .control-item {
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 16px;
-        padding: 12px 16px;
-        display: grid;
-        gap: 8px;
-      }
+            .hero-meta span {
+                font-weight: 600;
+            }
 
-      label {
-        font-weight: 600;
-      }
+            button {
+                border: none;
+                border-radius: 999px;
+                padding: 10px 18px;
+                font-family: 'Signika', sans-serif;
+                font-weight: 600;
+                font-size: 0.95rem;
+                cursor: pointer;
+                background: var(--accent);
+                color: white;
+                box-shadow: 0 10px 20px rgba(240, 77, 58, 0.25);
+                transition:
+                    transform 0.2s ease,
+                    box-shadow 0.2s ease,
+                    opacity 0.2s ease;
+            }
 
-      input[type='range'] {
-        width: 100%;
-      }
+            button.secondary {
+                background: var(--accent-2);
+                box-shadow: 0 10px 20px rgba(43, 158, 163, 0.25);
+            }
 
-      select,
-      input[type='text'] {
-        width: 100%;
-        padding: 8px 10px;
-        border-radius: 10px;
-        border: 1px solid rgba(43, 31, 31, 0.2);
-        font-family: 'Signika', sans-serif;
-      }
+            button.ghost {
+                background: rgba(43, 158, 163, 0.16);
+                color: var(--ink);
+                box-shadow: none;
+            }
 
-      .call-display {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 18px;
-      }
+            button:disabled {
+                cursor: not-allowed;
+                opacity: 0.5;
+                box-shadow: none;
+            }
 
-      .card-panel {
-        background: var(--panel-strong);
-        border-radius: 20px;
-        padding: 18px;
-        box-shadow: var(--shadow);
-        display: grid;
-        gap: 12px;
-      }
+            button:not(:disabled):hover {
+                transform: translateY(-1px);
+                box-shadow: 0 14px 30px rgba(47, 27, 16, 0.2);
+            }
 
-      .card-label {
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 1px;
-        color: rgba(43, 31, 31, 0.7);
-      }
+            #start-btn {
+                background: var(--accent-green);
+                box-shadow: 0 10px 20px rgba(59, 189, 106, 0.25);
+            }
 
-      .card-body {
-        display: grid;
-        grid-template-columns: 120px 1fr;
-        gap: 16px;
-        align-items: center;
-      }
+            #end-btn {
+                background: var(--accent);
+                color: #fff;
+                box-shadow: 0 10px 20px rgba(240, 77, 58, 0.25);
+            }
 
-      .card-art {
-        width: 120px;
-        height: 120px;
-        border-radius: 20px;
-        background-size: cover;
-        background-position: center;
-        background-color: rgba(240, 77, 58, 0.2);
-        box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
-      }
+            #pause-btn,
+            #next-btn {
+                background: var(--accent-blue);
+                box-shadow: 0 10px 20px rgba(47, 116, 201, 0.25);
+            }
 
-      .card-info {
-        display: grid;
-        gap: 6px;
-      }
+            label {
+                font-weight: 600;
+            }
 
-      .card-number {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: var(--accent);
-      }
+            input[type='range'] {
+                width: 100%;
+            }
 
-      .card-name-es {
-        font-size: 1.4rem;
-        font-weight: 700;
-      }
+            select,
+            input[type='text'] {
+                width: 100%;
+                padding: 8px 10px;
+                border-radius: 10px;
+                border: 1px solid rgba(43, 31, 31, 0.2);
+                font-family: 'Signika', sans-serif;
+            }
 
-      .card-name-en {
-        font-size: 1rem;
-        color: rgba(43, 31, 31, 0.7);
-      }
+            .call-stage {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 18px;
+            }
 
-      .placemat {
-        background: var(--panel-strong);
-        border-radius: 20px;
-        padding: 20px 18px 24px;
-        box-shadow: var(--shadow);
-        display: grid;
-        gap: 16px;
-      }
+            .card-panel {
+                background: var(--panel-strong);
+                border-radius: 20px;
+                padding: 18px;
+                box-shadow: var(--shadow);
+                display: grid;
+                gap: 12px;
+            }
 
-      .placemat-header {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
-        justify-content: space-between;
-      }
+            .card-label {
+                text-transform: uppercase;
+                font-size: 0.8rem;
+                letter-spacing: 1px;
+                color: rgba(43, 31, 31, 0.7);
+            }
 
-      .placemat-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-        gap: 10px;
-      }
+            .card-body {
+                display: grid;
+                grid-template-columns: var(--card-size) 1fr;
+                gap: 16px;
+                align-items: center;
+            }
 
-      .placemat-tile {
-        position: relative;
-        border-radius: 14px;
-        padding: 8px;
-        background: rgba(255, 255, 255, 0.7);
-        border: 2px solid transparent;
-        display: grid;
-        gap: 6px;
-        text-align: center;
-        transition: transform 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
-      }
+            .card-art {
+                position: relative;
+                width: var(--card-size);
+                height: var(--card-size + 30px);
+                border-radius: 20px;
+                background-color: rgba(240, 77, 58, 0.2);
+                box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
+                overflow: hidden;
+            }
 
-      .placemat-tile.is-current {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(240, 77, 58, 0.2);
-        transform: translateY(-2px);
-      }
+            .card-image {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
 
-      .placemat-tile.is-next {
-        border-color: var(--accent-2);
-        box-shadow: 0 0 0 3px rgba(43, 158, 163, 0.2);
-      }
+            .next-card .card-image {
+                filter: blur(2px) saturate(0.9);
+            }
 
-      .placemat-tile.is-called {
-        opacity: 0.5;
-      }
+            .next-card .card-art::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background: rgba(255, 255, 255, 0.2);
+                pointer-events: none;
+            }
 
-      .tile-art {
-        width: 100%;
-        aspect-ratio: 1;
-        border-radius: 12px;
-        background-size: cover;
-        background-position: center;
-      }
+            .card-info {
+                display: grid;
+                gap: 6px;
+            }
 
-      .tile-meta {
-        display: grid;
-        gap: 2px;
-      }
+            .card-number {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: var(--accent);
+            }
 
-      .tile-number {
-        font-weight: 700;
-        color: var(--accent);
-      }
+            .card-name-es {
+                font-size: 1.4rem;
+                font-weight: 700;
+            }
 
-      .tile-name {
-        font-size: 0.78rem;
-        font-weight: 600;
-      }
+            .card-name-en {
+                font-size: 1rem;
+                color: rgba(43, 31, 31, 0.7);
+            }
 
-      .tile-dot {
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        width: 14px;
-        height: 14px;
-        border-radius: 999px;
-        background: var(--accent-2);
-        border: 2px solid #fff;
-        transform: scale(0);
-        transition: transform 0.2s ease;
-      }
+            .placemat {
+                background: var(--panel-strong);
+                border-radius: 20px;
+                padding: 20px 18px 24px;
+                box-shadow: var(--shadow);
+                display: grid;
+                gap: 16px;
+            }
 
-      .placemat-tile.is-called .tile-dot {
-        transform: scale(1);
-      }
+            .placemat-header {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                align-items: center;
+                justify-content: space-between;
+            }
 
-      .status-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
-        justify-content: space-between;
-        font-weight: 600;
-      }
+            .placemat-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(var(--card-size), 1fr));
+                gap: 12px;
+            }
 
-      .tts-advanced {
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: 14px;
-        padding: 12px 16px;
-      }
+            .placemat-tile {
+                position: relative;
+                border-radius: 14px;
+                padding: 8px 6px 10px;
+                background: rgba(255, 255, 255, 0.7);
+                border: 2px solid transparent;
+                display: grid;
+                gap: 6px;
+                text-align: center;
+                justify-items: center;
+                transition:
+                    transform 0.2s ease,
+                    border 0.2s ease,
+                    box-shadow 0.2s ease;
+            }
 
-      .tts-advanced summary {
-        cursor: pointer;
-        font-weight: 600;
-      }
+            .placemat-tile.is-current {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px rgba(240, 77, 58, 0.2);
+                transform: translateY(-2px);
+            }
 
-      .tts-advanced .advanced-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 10px;
-        margin-top: 10px;
-      }
+            .placemat-tile.is-next {
+                border-color: var(--accent-2);
+                box-shadow: 0 0 0 3px rgba(43, 158, 163, 0.2);
+            }
 
-      @media (max-width: 720px) {
-        #loteria-app {
-          padding: 20px 16px 32px;
+            .placemat-tile.is-called {
+                opacity: 0.5;
+            }
+
+            .tile-art {
+                width: var(--card-size);
+                height: var(--card-size);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+
+            .tile-image {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+        @media (min-width: 1200px) {
+            .placemat-grid {
+                grid-template-columns: repeat(12, minmax(0, 1fr));
+            }
+
+            .tile-art {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 3 / 4;
+            }
+
+            .tile-image {
+                object-fit: contain;
+            }
         }
-        .card-body {
-          grid-template-columns: 1fr;
-          justify-items: center;
-          text-align: center;
-        }
-        .card-art {
-          width: 140px;
-          height: 140px;
-        }
-      }
 
-      @media (prefers-reduced-motion: reduce) {
-        * {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="loteria-app">
-      <header class="hero">
-        <div>
-          <h1 class="hero-title">Loteria Caller</h1>
-          <p class="hero-subtitle">
-            Call Spanish + English cards, track the full 54-card placemat, and keep the pace for manual or auto play.
-          </p>
+            .tile-meta {
+                display: grid;
+                gap: 2px;
+            }
+
+            .tile-number {
+                font-weight: 700;
+                color: var(--accent);
+                font-size: 0.78rem;
+            }
+
+            .tile-name {
+                font-size: 0.7rem;
+                font-weight: 600;
+            }
+
+            .tile-dot {
+                position: absolute;
+                top: 6px;
+                right: 6px;
+                width: 14px;
+                height: 14px;
+                border-radius: 999px;
+                background: var(--accent-2);
+                border: 2px solid #fff;
+                transform: scale(0);
+                transition: transform 0.2s ease;
+            }
+
+            .placemat-tile.is-called .tile-dot {
+                transform: scale(1);
+            }
+
+            .status-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                align-items: center;
+                justify-content: space-between;
+                font-weight: 600;
+            }
+
+            .tts-advanced {
+                background: rgba(255, 255, 255, 0.6);
+                border-radius: 14px;
+                padding: 12px 16px;
+            }
+
+            .tts-advanced summary {
+                cursor: pointer;
+                font-weight: 600;
+            }
+
+            .tts-advanced .advanced-grid {
+                display: grid;
+                /*grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); --- ORIGINAL ---*/
+                grid-template-columns: repeat(20px, minmax(200px, 1fr));
+                gap: 10px;
+                margin-top: 10px;
+            }
+
+            .voice-dialog {
+                border: none;
+                border-radius: 18px;
+                padding: 0;
+                width: min(92vw, 460px);
+                background: var(--panel-strong);
+                color: var(--ink);
+                box-shadow: var(--shadow);
+            }
+
+            .voice-dialog::backdrop {
+                background: rgba(43, 31, 31, 0.35);
+                backdrop-filter: blur(3px);
+            }
+
+            .voice-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 18px 8px;
+            }
+
+            .voice-header h2 {
+                margin: 0;
+                font-size: 1.2rem;
+            }
+
+            .voice-body {
+                display: grid;
+                gap: 12px;
+                padding: 0 18px 18px;
+            }
+
+            .voice-body small {
+                color: rgba(43, 31, 31, 0.7);
+            }
+
+            @media (max-width: 980px) {
+                header.hero {
+                    grid-template-columns: 1fr;
+                    text-align: center;
+                }
+
+                .hero-right {
+                    grid-template-columns: 1fr;
+                    justify-items: center;
+                }
+
+                .control-stack {
+                    justify-content: center;
+                }
+            }
+
+        @media (max-width: 720px) {
+            :root {
+              --card-size: clamp(68px, 18vw, 96px);
+            }
+
+                #loteria-app {
+                    padding: 20px 16px 32px;
+                }
+                .card-body {
+                    grid-template-columns: 1fr;
+                    justify-items: center;
+                    text-align: center;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="loteria-app">
+            <header class="hero">
+                <div class="hero-left">
+                    <h1 class="hero-title">Loteria Caller</h1>
+                    <p class="hero-subtitle">Call Spanish + English cards, track the full 54-card placemat, and keep the pace for manual or auto play.</p>
+                </div>
+                <div class="hero-center">
+                    <div class="auto-panel">
+                        <div class="auto-row">
+                            <label for="auto-toggle">Auto Call</label>
+                            <input type="checkbox" id="auto-toggle" checked />
+                        </div>
+                        <div class="delay-row">
+                            <label for="speed-range">Delay</label>
+                            <input type="range" id="speed-range" min="2" max="12" value="5" step="1" />
+                            <div>Every <span id="speed-value">5s</span></div>
+                        </div>
+                    </div>
+                    <button id="voice-btn" class="ghost">Change Voice</button>
+                </div>
+                <div class="hero-right">
+                    <div class="hero-meta">
+                        <div>Mode: <span id="mode-label">Auto</span></div>
+                        <div>Called: <span id="called-count">0</span> / 54</div>
+                        <div>Status: <span id="status-text">Ready</span></div>
+                    </div>
+                    <div class="control-stack">
+                        <div class="control-row">
+                            <button id="start-btn">Start</button>
+                            <button id="end-btn" class="ghost" disabled>Stop</button>
+                        </div>
+                        <div class="control-row">
+                            <button id="pause-btn" class="secondary" disabled>Pause</button>
+                            <button id="next-btn" class="secondary" disabled>Call</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="call-stage">
+                <article class="card-panel current-card">
+                    <div class="card-label">Current Card</div>
+                    <div class="card-body">
+                        <div class="card-art">
+                            <img id="current-art" class="card-image" alt="" />
+                        </div>
+                        <div class="card-info">
+                            <div id="current-number" class="card-number">—</div>
+                            <div id="current-name-es" class="card-name-es">Waiting for game start</div>
+                            <div id="current-name-en" class="card-name-en"></div>
+                        </div>
+                    </div>
+                </article>
+                <article class="card-panel next-card">
+                    <div class="card-label">Next Card</div>
+                    <div class="card-body">
+                        <div class="card-art">
+                            <img id="next-art" class="card-image" alt="" />
+                        </div>
+                        <div class="card-info">
+                            <div id="next-number" class="card-number">—</div>
+                            <div id="next-name-es" class="card-name-es">Waiting for game start</div>
+                            <div id="next-name-en" class="card-name-en"></div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="placemat">
+                <div class="placemat-header">
+                    <h2 class="hero-title" style="font-size: 1.4rem;">Placemat</h2>
+                    <div class="status-row">
+                        <span>All 54 cards are tracked below with a dot when called.</span>
+                    </div>
+                </div>
+                <div id="placemat-grid" class="placemat-grid"></div>
+            </section>
         </div>
-        <div class="hero-meta">
-          <div>Mode: <span id="mode-label">Auto</span></div>
-          <div>Called: <span id="called-count">0</span> / 54</div>
-          <div>Status: <span id="status-text">Ready</span></div>
-        </div>
-      </header>
 
-      <section class="controls">
-        <div class="btn-row">
-          <button id="start-btn">Start Game</button>
-          <button id="pause-btn" class="secondary" disabled>Pause</button>
-          <button id="end-btn" class="ghost" disabled>End Game</button>
-          <button id="next-btn" class="secondary" disabled>Call Next</button>
-        </div>
-
-        <div class="control-grid">
-          <div class="control-item">
-            <label for="auto-toggle">Automatic Calling</label>
-            <input type="checkbox" id="auto-toggle" checked />
-          </div>
-          <div class="control-item">
-            <label for="speed-range">Delay Between Calls</label>
-            <input type="range" id="speed-range" min="2" max="12" value="5" step="1" />
-            <div>Every <span id="speed-value">5s</span></div>
-          </div>
-          <div class="control-item">
-            <label for="tts-provider">Voice Provider</label>
-            <select id="tts-provider">
-              <option value="browser">Browser Voice</option>
-              <option value="prerecorded">Pre-recorded (Piper)</option>
-              <option value="cloud" disabled>Google Cloud TTS (coming soon)</option>
-            </select>
-            <small style="opacity: 0.7;">
-              Pre-recorded expects files like <code>/audio/loteria/01.mp3</code>. Cloud TTS is disabled to avoid costs.
-            </small>
-          </div>
-        </div>
-
-        <details class="tts-advanced" aria-disabled="true">
-          <summary>Google Cloud TTS settings (coming soon)</summary>
-          <div class="advanced-grid">
-            <div>
-              <label for="cloud-model">Model name</label>
-              <input type="text" id="cloud-model" value="gemini-2.5-flash-tts" disabled />
+        <dialog id="voice-dialog" class="voice-dialog">
+            <div class="voice-header">
+                <h2>Voice Settings</h2>
+                <button id="voice-close" class="ghost">Close</button>
             </div>
-            <div>
-              <label for="cloud-voice-es">Spanish voice name</label>
-              <input type="text" id="cloud-voice-es" placeholder="Optional" disabled />
+            <div class="voice-body">
+                <label for="tts-provider">Voice Provider</label>
+                <select id="tts-provider">
+                    <option value="browser">Browser Voice</option>
+                    <option value="prerecorded">Pre-recorded (Piper)</option>
+                    <option value="cloud" disabled>Google Cloud TTS (coming soon)</option>
+                </select>
+                <small>
+                    Pre-recorded expects files like <code>/audio/loteria/01.mp3</code>. Cloud TTS is disabled to avoid costs.
+                </small>
+                <details class="tts-advanced" aria-disabled="true">
+                    <summary>Google Cloud TTS settings (coming soon)</summary>
+                    <div class="advanced-grid">
+                        <div>
+                            <label for="cloud-model">Model name</label>
+                            <input type="text" id="cloud-model" value="gemini-2.5-flash-tts" disabled />
+                        </div>
+                        <div>
+                            <label for="cloud-voice-es">Spanish voice name</label>
+                            <input type="text" id="cloud-voice-es" placeholder="Optional" disabled />
+                        </div>
+                        <div>
+                            <label for="cloud-voice-en">English voice name</label>
+                            <input type="text" id="cloud-voice-en" placeholder="Optional" disabled />
+                        </div>
+                    </div>
+                </details>
             </div>
-            <div>
-              <label for="cloud-voice-en">English voice name</label>
-              <input type="text" id="cloud-voice-en" placeholder="Optional" disabled />
-            </div>
-          </div>
-        </details>
-      </section>
+        </dialog>
 
-      <section class="call-display">
-        <article class="card-panel">
-          <div class="card-label">Current Card</div>
-          <div class="card-body">
-            <div id="current-art" class="card-art"></div>
-            <div class="card-info">
-              <div id="current-number" class="card-number">—</div>
-              <div id="current-name-es" class="card-name-es">Waiting for game start</div>
-              <div id="current-name-en" class="card-name-en"></div>
-            </div>
-          </div>
-        </article>
-        <article class="card-panel">
-          <div class="card-label">Next Card</div>
-          <div class="card-body">
-            <div id="next-art" class="card-art"></div>
-            <div class="card-info">
-              <div id="next-number" class="card-number">—</div>
-              <div id="next-name-es" class="card-name-es">Waiting for game start</div>
-              <div id="next-name-en" class="card-name-en"></div>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section class="placemat">
-        <div class="placemat-header">
-          <h2 class="hero-title" style="font-size: 1.4rem;">Placemat</h2>
-          <div class="status-row">
-            <span>All 54 cards are tracked below with a dot when called.</span>
-          </div>
-        </div>
-        <div id="placemat-grid" class="placemat-grid"></div>
-      </section>
-    </div>
-
-    <script type="module" src="/src/scripts/loteria/main.js"></script>
-  </body>
+        <script type="module" src="/src/scripts/loteria/main.js"></script>
+    </body>
 </html>

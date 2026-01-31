@@ -2,9 +2,9 @@
   Input Manager
   Version: 0.2.0
   Last Updated: 2026-01-28
-  Changelog:
-  - 0.2.0: Added documentation comments and preserved input mapping.
+  Changelog: See CHANGELOG.md.
 */
+
 export class InputManager {
   constructor() {
     this.keys = {};

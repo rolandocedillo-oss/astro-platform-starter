@@ -1,8 +1,10 @@
 /*
-  Changelog:
-  - 2026-01-28: Proxy Gemini generateContent requests server-side with MY_SERVICE_API_KEY.
-  - 2026-01-28: Disable prerendering so POST works in dev/build.
+  API Proxy
+  Last Updated: 2026-01-28
+  Changelog: See CHANGELOG.md.
 */
+
+
 
 export const prerender = false;
 

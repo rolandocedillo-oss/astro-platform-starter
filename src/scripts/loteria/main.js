@@ -38,6 +38,9 @@ const elements = {
   nextNameEs: document.getElementById('next-name-es'),
   nextNameEn: document.getElementById('next-name-en'),
   placemat: document.getElementById('placemat-grid'),
+  voiceBtn: document.getElementById('voice-btn'),
+  voiceDialog: document.getElementById('voice-dialog'),
+  voiceClose: document.getElementById('voice-close'),
   ttsProvider: document.getElementById('tts-provider'),
   cloudModel: document.getElementById('cloud-model'),
   cloudVoiceEs: document.getElementById('cloud-voice-es'),
@@ -49,6 +52,7 @@ const calledIds = new Set();
 const CLOUD_TTS_ENABLED = false;
 const PRERECORDED_AUDIO_BASE = '/audio/loteria';
 const PRERECORDED_EXTENSIONS = ['mp3', 'wav'];
+const CARD_ART_SIZE = 140;
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -81,6 +85,12 @@ function slugify(text) {
 }
 
 function formatCardFilename(card) {
+  const number = String(card.id).padStart(2, '0');
+  const slug = slugify(card.nameEs);
+  return `${number}-${slug}.webp`;
+}
+
+function formatLegacyFilename(card) {
   const number = String(card.id).padStart(2, '0');
   const name = card.nameEs
     .normalize('NFD')
@@ -116,14 +126,41 @@ function buildFallbackArt(card, size = 140) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg.trim())}`;
 }
 
-function buildCardArt(card, size = 140) {
-  if (!card) return 'none';
+function buildCardImageSources(card, size = 140) {
+  if (!card) return [];
   const filename = formatCardFilename(card);
-  const assetPath = `/images/loteria/cards/${filename}`;
+  const legacyFilename = formatLegacyFilename(card);
+  const assetPath = `/images/loteria/cards/${encodeURIComponent(filename)}`;
+  const legacyPath = `/images/loteria/cards/${encodeURIComponent(legacyFilename)}`;
   const slug = slugify(card.nameEs);
   const svgFallback = `/images/loteria/cards/${slug}.svg`;
   const fallback = buildFallbackArt(card, size);
-  return `url('${assetPath}'), url('${svgFallback}'), url('${fallback}')`;
+  return [assetPath, legacyPath, svgFallback, fallback];
+}
+
+function clearCardImage(imgEl) {
+  if (!imgEl) return;
+  imgEl.removeAttribute('src');
+  imgEl.onerror = null;
+}
+
+function setCardImage(imgEl, card, size = 140) {
+  if (!imgEl) return;
+  const sources = buildCardImageSources(card, size);
+  if (sources.length === 0) {
+    clearCardImage(imgEl);
+    return;
+  }
+  let index = 0;
+  const tryNext = () => {
+    if (index >= sources.length) {
+      clearCardImage(imgEl);
+      return;
+    }
+    imgEl.src = sources[index++];
+  };
+  imgEl.onerror = tryNext;
+  tryNext();
 }
 
 function pad2(value) {
@@ -145,13 +182,15 @@ function renderPlacemat() {
     tile.className = 'placemat-tile';
     tile.dataset.cardId = String(card.id);
     tile.innerHTML = `
-      <div class="tile-art" style="background-image: ${buildCardArt(card, 100)}"></div>
+      <div class="tile-art"><img class="tile-image" alt="" /></div>
       <div class="tile-meta">
         <span class="tile-number">${card.id}</span>
         <span class="tile-name">${card.nameEs}</span>
       </div>
       <div class="tile-dot"></div>
     `;
+    const tileImage = tile.querySelector('.tile-image');
+    setCardImage(tileImage, card, CARD_ART_SIZE);
     elements.placemat.appendChild(tile);
     tileById.set(card.id, tile);
   });
@@ -211,6 +250,7 @@ function updateModeLabel() {
 
 function updateControls() {
   if (!elements.startBtn) return;
+  elements.startBtn.disabled = state.running;
   elements.pauseBtn.disabled = !state.running;
   elements.endBtn.disabled = !state.running;
   elements.nextBtn.disabled = !state.running || state.autoMode || state.paused;
@@ -221,13 +261,13 @@ function updateControls() {
 function setPreview(card, target) {
   if (!target) return;
   if (!card) {
-    target.art.style.backgroundImage = 'none';
+    clearCardImage(target.art);
     target.number.textContent = '—';
     target.nameEs.textContent = 'Waiting for game start';
     target.nameEn.textContent = '';
     return;
   }
-  target.art.style.backgroundImage = buildCardArt(card, 220);
+  setCardImage(target.art, card, CARD_ART_SIZE);
   target.number.textContent = `#${card.id}`;
   target.nameEs.textContent = card.nameEs;
   target.nameEn.textContent = card.nameEn;
@@ -419,6 +459,7 @@ async function callNextCard() {
 }
 
 function startGame() {
+  if (state.running) return;
   stopAudio();
   clearTimer();
   resetPlacemat();
@@ -535,6 +576,32 @@ function handleCloudSettings() {
   state.cloudVoiceEn = elements.cloudVoiceEn?.value?.trim() || '';
 }
 
+function openVoiceDialog() {
+  const dialog = elements.voiceDialog;
+  if (!dialog) return;
+  if (typeof dialog.showModal === 'function') {
+    dialog.showModal();
+  } else {
+    dialog.setAttribute('open', '');
+  }
+}
+
+function closeVoiceDialog() {
+  const dialog = elements.voiceDialog;
+  if (!dialog) return;
+  if (typeof dialog.close === 'function' && dialog.open) {
+    dialog.close();
+  } else {
+    dialog.removeAttribute('open');
+  }
+}
+
+function handleDialogClick(event) {
+  if (event.target === elements.voiceDialog) {
+    closeVoiceDialog();
+  }
+}
+
 function init() {
   renderPlacemat();
   updateCounts();
@@ -566,6 +633,9 @@ function init() {
   elements.cloudModel?.addEventListener('change', handleCloudSettings);
   elements.cloudVoiceEs?.addEventListener('change', handleCloudSettings);
   elements.cloudVoiceEn?.addEventListener('change', handleCloudSettings);
+  elements.voiceBtn?.addEventListener('click', openVoiceDialog);
+  elements.voiceClose?.addEventListener('click', closeVoiceDialog);
+  elements.voiceDialog?.addEventListener('click', handleDialogClick);
 }
 
 init();

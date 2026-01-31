@@ -2,18 +2,9 @@
   Robot Factory
   Version: 0.2.9
   Last Updated: 2026-01-28
-  Changelog:
-  - 0.2.9: Added a held bomb mesh for the bomb weapon visual.
-  - 0.2.8: Positioned hammer head higher on the arm for a top-down swing.
-  - 0.2.7: Lengthened hammer handle and attached head to the tip.
-  - 0.2.6: Moved hammer head forward and added red handle + gray head materials.
-  - 0.2.5: Extended sword blade length for better reach visibility.
-  - 0.2.4: Restored cube head with a front-only neon face.
-  - 0.2.3: Simplified head to a single-face plate for facing clarity.
-  - 0.2.2: Added bow, shield, and spear meshes for clearer weapon visuals.
-  - 0.2.1: Added hammer head mesh toggle for weapon visuals.
-  - 0.2.0: Added documentation comments for robot mesh composition.
+  Changelog: See CHANGELOG.md.
 */
+
 import * as THREE from 'three';
 
 export function createRobot(color = 0x00ffcc) {
