@@ -1,0 +1,482 @@
+---
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Loteria Caller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Yatra+One&display=swap');
+
+      :root {
+        color-scheme: light;
+        --bg: #f7e0b7;
+        --bg-2: #f4c281;
+        --ink: #2b1f1f;
+        --accent: #f04d3a;
+        --accent-2: #2b9ea3;
+        --panel: rgba(255, 255, 255, 0.82);
+        --panel-strong: rgba(255, 255, 255, 0.95);
+        --shadow: 0 16px 40px rgba(47, 27, 16, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at top, #fff1d6 0%, var(--bg) 30%, var(--bg-2) 100%);
+        color: var(--ink);
+        font-family: 'Signika', sans-serif;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(240, 77, 58, 0.08) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      #loteria-app {
+        position: relative;
+        z-index: 1;
+        padding: 32px 24px 40px;
+        max-width: 1300px;
+        margin: 0 auto;
+        display: grid;
+        gap: 24px;
+      }
+
+      header.hero {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--panel-strong);
+        border-radius: 20px;
+        padding: 20px 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero-title {
+        margin: 0;
+        font-family: 'Yatra One', serif;
+        font-size: clamp(2rem, 3vw, 2.6rem);
+        letter-spacing: 0.5px;
+      }
+
+      .hero-subtitle {
+        margin: 6px 0 0;
+        font-size: 1rem;
+        max-width: 520px;
+        line-height: 1.4;
+      }
+
+      .hero-meta {
+        display: grid;
+        gap: 6px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: rgba(43, 158, 163, 0.14);
+        min-width: 200px;
+      }
+
+      .hero-meta span {
+        font-weight: 600;
+      }
+
+      .controls {
+        background: var(--panel-strong);
+        border-radius: 20px;
+        padding: 18px 22px;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 18px;
+      }
+
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-family: 'Signika', sans-serif;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 10px 20px rgba(240, 77, 58, 0.25);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      }
+
+      button.secondary {
+        background: var(--accent-2);
+        box-shadow: 0 10px 20px rgba(43, 158, 163, 0.25);
+      }
+
+      button.ghost {
+        background: rgba(43, 158, 163, 0.16);
+        color: var(--ink);
+        box-shadow: none;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+        box-shadow: none;
+      }
+
+      button:not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(47, 27, 16, 0.2);
+      }
+
+      .control-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px 18px;
+      }
+
+      .control-item {
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 16px;
+        padding: 12px 16px;
+        display: grid;
+        gap: 8px;
+      }
+
+      label {
+        font-weight: 600;
+      }
+
+      input[type='range'] {
+        width: 100%;
+      }
+
+      select,
+      input[type='text'] {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(43, 31, 31, 0.2);
+        font-family: 'Signika', sans-serif;
+      }
+
+      .call-display {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 18px;
+      }
+
+      .card-panel {
+        background: var(--panel-strong);
+        border-radius: 20px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 12px;
+      }
+
+      .card-label {
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        color: rgba(43, 31, 31, 0.7);
+      }
+
+      .card-body {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .card-art {
+        width: 120px;
+        height: 120px;
+        border-radius: 20px;
+        background-size: cover;
+        background-position: center;
+        background-color: rgba(240, 77, 58, 0.2);
+        box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
+      }
+
+      .card-info {
+        display: grid;
+        gap: 6px;
+      }
+
+      .card-number {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      .card-name-es {
+        font-size: 1.4rem;
+        font-weight: 700;
+      }
+
+      .card-name-en {
+        font-size: 1rem;
+        color: rgba(43, 31, 31, 0.7);
+      }
+
+      .placemat {
+        background: var(--panel-strong);
+        border-radius: 20px;
+        padding: 20px 18px 24px;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 16px;
+      }
+
+      .placemat-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .placemat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        gap: 10px;
+      }
+
+      .placemat-tile {
+        position: relative;
+        border-radius: 14px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 2px solid transparent;
+        display: grid;
+        gap: 6px;
+        text-align: center;
+        transition: transform 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .placemat-tile.is-current {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(240, 77, 58, 0.2);
+        transform: translateY(-2px);
+      }
+
+      .placemat-tile.is-next {
+        border-color: var(--accent-2);
+        box-shadow: 0 0 0 3px rgba(43, 158, 163, 0.2);
+      }
+
+      .placemat-tile.is-called {
+        opacity: 0.5;
+      }
+
+      .tile-art {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        background-size: cover;
+        background-position: center;
+      }
+
+      .tile-meta {
+        display: grid;
+        gap: 2px;
+      }
+
+      .tile-number {
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      .tile-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
+      .tile-dot {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: var(--accent-2);
+        border: 2px solid #fff;
+        transform: scale(0);
+        transition: transform 0.2s ease;
+      }
+
+      .placemat-tile.is-called .tile-dot {
+        transform: scale(1);
+      }
+
+      .status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 600;
+      }
+
+      .tts-advanced {
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 14px;
+        padding: 12px 16px;
+      }
+
+      .tts-advanced summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .tts-advanced .advanced-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      @media (max-width: 720px) {
+        #loteria-app {
+          padding: 20px 16px 32px;
+        }
+        .card-body {
+          grid-template-columns: 1fr;
+          justify-items: center;
+          text-align: center;
+        }
+        .card-art {
+          width: 140px;
+          height: 140px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loteria-app">
+      <header class="hero">
+        <div>
+          <h1 class="hero-title">Loteria Caller</h1>
+          <p class="hero-subtitle">
+            Call Spanish + English cards, track the full 54-card placemat, and keep the pace for manual or auto play.
+          </p>
+        </div>
+        <div class="hero-meta">
+          <div>Mode: <span id="mode-label">Auto</span></div>
+          <div>Called: <span id="called-count">0</span> / 54</div>
+          <div>Status: <span id="status-text">Ready</span></div>
+        </div>
+      </header>
+
+      <section class="controls">
+        <div class="btn-row">
+          <button id="start-btn">Start Game</button>
+          <button id="pause-btn" class="secondary" disabled>Pause</button>
+          <button id="end-btn" class="ghost" disabled>End Game</button>
+          <button id="next-btn" class="secondary" disabled>Call Next</button>
+        </div>
+
+        <div class="control-grid">
+          <div class="control-item">
+            <label for="auto-toggle">Automatic Calling</label>
+            <input type="checkbox" id="auto-toggle" checked />
+          </div>
+          <div class="control-item">
+            <label for="speed-range">Delay Between Calls</label>
+            <input type="range" id="speed-range" min="2" max="12" value="5" step="1" />
+            <div>Every <span id="speed-value">5s</span></div>
+          </div>
+          <div class="control-item">
+            <label for="tts-provider">Voice Provider</label>
+            <select id="tts-provider">
+              <option value="browser">Browser Voice</option>
+              <option value="prerecorded">Pre-recorded (Piper)</option>
+              <option value="cloud" disabled>Google Cloud TTS (coming soon)</option>
+            </select>
+            <small style="opacity: 0.7;">
+              Pre-recorded expects files like <code>/audio/loteria/01.mp3</code>. Cloud TTS is disabled to avoid costs.
+            </small>
+          </div>
+        </div>
+
+        <details class="tts-advanced" aria-disabled="true">
+          <summary>Google Cloud TTS settings (coming soon)</summary>
+          <div class="advanced-grid">
+            <div>
+              <label for="cloud-model">Model name</label>
+              <input type="text" id="cloud-model" value="gemini-2.5-flash-tts" disabled />
+            </div>
+            <div>
+              <label for="cloud-voice-es">Spanish voice name</label>
+              <input type="text" id="cloud-voice-es" placeholder="Optional" disabled />
+            </div>
+            <div>
+              <label for="cloud-voice-en">English voice name</label>
+              <input type="text" id="cloud-voice-en" placeholder="Optional" disabled />
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="call-display">
+        <article class="card-panel">
+          <div class="card-label">Current Card</div>
+          <div class="card-body">
+            <div id="current-art" class="card-art"></div>
+            <div class="card-info">
+              <div id="current-number" class="card-number">—</div>
+              <div id="current-name-es" class="card-name-es">Waiting for game start</div>
+              <div id="current-name-en" class="card-name-en"></div>
+            </div>
+          </div>
+        </article>
+        <article class="card-panel">
+          <div class="card-label">Next Card</div>
+          <div class="card-body">
+            <div id="next-art" class="card-art"></div>
+            <div class="card-info">
+              <div id="next-number" class="card-number">—</div>
+              <div id="next-name-es" class="card-name-es">Waiting for game start</div>
+              <div id="next-name-en" class="card-name-en"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="placemat">
+        <div class="placemat-header">
+          <h2 class="hero-title" style="font-size: 1.4rem;">Placemat</h2>
+          <div class="status-row">
+            <span>All 54 cards are tracked below with a dot when called.</span>
+          </div>
+        </div>
+        <div id="placemat-grid" class="placemat-grid"></div>
+      </section>
+    </div>
+
+    <script type="module" src="/src/scripts/loteria/main.js"></script>
+  </body>
+</html>
